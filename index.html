@@ -113,7 +113,7 @@
         #shuffle.loaded,
         #toCache:hover,
         #fromCache:hover,
-        .reset {
+        .reset, #fromServer:hover {
             background-color: #4ec987;
         }
 
@@ -156,7 +156,7 @@
         .mySelect,
         .error,
         .loading,
-        .reset {
+        .reset, #fromServer {
             margin-left: 5px;
         }
 
@@ -389,6 +389,8 @@
             <img src="Assets/proceed.svg" id="processDocx" onclick="processFile()" class="top-btn"
                 alt="Загрузить вопросы из указанного файла">
 
+            <img src="Assets/server.svg" id="fromServer" class="top-btn" alt="Взять файл из сервера">
+
             <img src="Assets/shuffle.svg" id="shuffle" class="top-btn" alt="Перемешать вопросы">
 
             <img src="Assets/upload.svg" id="toCache" class="top-btn" alt="Сохранить текущие вопросы в кэш">
@@ -414,7 +416,7 @@
 
         </div>
         <div class="wrong-list">
-            
+
         </div>
     </div>
 

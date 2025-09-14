@@ -64,7 +64,42 @@ async function processFile(content) {
             console.error('Error:', error);
         }
 
-    } else {
+    } else if (content === "web") {
+
+        try {
+            // Путь к файлу относительно корня сайта
+            const response = await fetch('/docNormalized.docx');
+
+            if (!response.ok) {
+                throw new Error('Файл не найден');
+            }
+
+            // Получаем файл как ArrayBuffer
+            const arrayBuffer = await response.arrayBuffer();
+            console.log('Файл загружен, размер:', arrayBuffer.byteLength, 'байт');
+
+            const result = await mammoth.convertToHtml(
+                { arrayBuffer },
+                {
+                    convertImage: mammoth.images.imgElement(function (image) {
+                        return image.read("base64").then(function (imageBuffer) {
+                            return {
+                                src: "data:" + image.contentType + ";base64," + imageBuffer
+                            };
+                        });
+                    })
+                }
+            );
+
+            htmlTest = result.value;
+
+        } catch (error) {
+            console.error('Ошибка загрузки файла:', error);
+            return null;
+        }
+
+    }
+    else {
         htmlTest = content;
     }
 
@@ -687,6 +722,7 @@ const fileDB = new FileDB();
 
 const toCacheButton = document.getElementById("toCache");
 const fromCacheButton = document.getElementById("fromCache");
+const fromServer = document.getElementById("fromServer");
 
 toCacheButton.addEventListener("click", async function () {
 
@@ -704,6 +740,12 @@ fromCacheButton.addEventListener("click", async function () {
     } else {
         console.log("Файл не найден.");
     }
+});
+
+fromServer.addEventListener("click", async function () {
+
+    processFile("web");
+
 });
 
 async function checkCache(storeName, key) {
