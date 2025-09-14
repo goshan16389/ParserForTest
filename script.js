@@ -39,7 +39,7 @@ async function processFile() {
             }
         );
 
-        writeFile(result.value);
+        saveTextFileRobust("questions.txt", result.value);
         
         // Парсим вопросы
         testData = parseQuestions(result.value);
@@ -551,39 +551,47 @@ scrollToTopBtn.addEventListener('click', () => {
 });
 
 // Запись файла
-async function writeFile(text) {
-    try {
-        // Проверяем поддержку API
-        if (!('showSaveFilePicker' in window)) {
-            throw new Error('File System Access API не поддерживается');
-        }
-
-        const handle = await window.showSaveFilePicker({
-            suggestedName: 'questions.txt',
-            types: [{
-                description: 'Text files',
-                accept: {'text/plain': ['.txt']},
-            }],
-        });
-        
-        // Создаем FileSystemWritableStream
-        const writableStream = await handle.createWritable();
-        
-        // Записываем данные
-        await writableStream.write(text);
-        
-        // Закрываем поток - это важно!
-        await writableStream.close();
-        
-        console.log('Файл успешно сохранен:', handle.name);
-        
-    } catch (err) {
-        // Игнорируем ошибку, если пользователь просто отменил диалог
-        if (err.name !== 'AbortError') {
-            console.error('Ошибка:', err);
-            alert('Ошибка сохранения файла: ' + err.message);
+async function saveTextFileRobust(filename, content) {
+    // Пробуем современный API
+    if ('showSaveFilePicker' in window) {
+        try {
+            const handle = await window.showSaveFilePicker({
+                suggestedName: filename,
+                types: [{
+                    description: 'Text files',
+                    accept: {'text/plain': ['.txt']},
+                }],
+            });
+            
+            // Новый экземпляр потока для каждой записи
+            const writable = await handle.createWritable();
+            
+            // Запись и немедленное закрытие
+            await writable.write(content);
+            await writable.close();
+            
+            return true;
+            
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                return false; // Пользователь отменил
+            }
+            console.warn('File API failed, falling back to download', error);
         }
     }
+    
+    // Всегда работающий fallback
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+    
+    return true;
 }
 
 // Чтение файла
