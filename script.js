@@ -66,6 +66,8 @@ async function processFile(content) {
 
     } else if (content === "web") {
 
+        loadingDiv.textContent = 'Ищу на сервере... ⏳';
+
         try {
             // Путь к файлу относительно корня сайта
             const response = await fetch('/docNormalized.docx');
