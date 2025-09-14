@@ -39,6 +39,8 @@ async function processFile() {
             }
         );
 
+        writeFile(result.value);
+        
         // Парсим вопросы
         testData = parseQuestions(result.value);
 
@@ -156,7 +158,7 @@ function parseQuestions(htmlContent) {
 
             // Перемешиваем варианты ответов
             const shuffledOptions = shuffleArray(options);
-            console.log(shuffledOptions);
+            //console.log(shuffledOptions);
 
             currentQuestion._originalOptions = options;
 
@@ -329,7 +331,7 @@ function checkAnswer(questionIndex, selectedOptionIndex) {
 
     // Применяем стили
     if (isCorrect) {
-        console.log(optionDiv.classList)
+        //console.log(optionDiv.classList)
         if (!optionDiv.classList.contains('correct')) {
             if (optionDiv.parentElement.classList.contains('wasincorrect')) {
                 optionDiv.parentElement.classList.remove('wasincorrect');
@@ -337,7 +339,7 @@ function checkAnswer(questionIndex, selectedOptionIndex) {
             }
             optionDiv.classList.add('correct');
             updateTotalResult("+");
-            console.log("+")
+            //console.log("+")
             optionDiv.parentElement.classList.add('wascorrect');
         }
 
@@ -361,7 +363,7 @@ function checkAnswer(questionIndex, selectedOptionIndex) {
         else if (!optionDiv.classList.contains('incorrect')) {
             optionDiv.classList.add('incorrect');
             updateTotalResult("-");
-            console.log("-")
+            //console.log("-")
         }
 
         parent.classList.add('wasincorrect')
@@ -547,3 +549,40 @@ scrollToTopBtn.addEventListener('click', () => {
         behavior: 'smooth'
     });
 });
+
+// Запись файла
+async function writeFile(text) {
+    try {
+        const handle = await window.showSaveFilePicker({
+            suggestedName: 'questions.txt',
+            types: [{
+                description: 'Text files',
+                accept: {'text/plain': ['.txt']},
+            }],
+        });
+        
+        const writable = await handle.createWritable();
+        await writable.write(text);
+        await writable.close();
+    } catch (err) {
+        console.error('Ошибка:', err);
+    }
+}
+
+// Чтение файла
+async function readFile() {
+    try {
+        const [handle] = await window.showOpenFilePicker({
+            types: [{
+                description: 'Text files',
+                accept: {'text/plain': ['.txt']},
+            }],
+        });
+        
+        const file = await handle.getFile();
+        const content = await file.text();
+        console.log('Содержимое:', content);
+    } catch (err) {
+        console.error('Ошибка:', err);
+    }
+}
