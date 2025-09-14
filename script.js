@@ -813,9 +813,11 @@ async function checkCacheOnLoad() {
 
         } else if (result.exists) {
             console.log('⚠️ Файл существует, но пустой');
+            loadingDiv.style.display = 'none';
 
         } else {
             console.log('❌ Файл не существует');
+            loadingDiv.style.display = 'none';
         }
 
     } catch (error) {
