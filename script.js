@@ -553,6 +553,11 @@ scrollToTopBtn.addEventListener('click', () => {
 // Запись файла
 async function writeFile(text) {
     try {
+        // Проверяем поддержку API
+        if (!('showSaveFilePicker' in window)) {
+            throw new Error('File System Access API не поддерживается');
+        }
+
         const handle = await window.showSaveFilePicker({
             suggestedName: 'questions.txt',
             types: [{
@@ -561,11 +566,23 @@ async function writeFile(text) {
             }],
         });
         
-        const writable = await handle.createWritable();
-        await writable.write(text);
-        await writable.close();
+        // Создаем FileSystemWritableStream
+        const writableStream = await handle.createWritable();
+        
+        // Записываем данные
+        await writableStream.write(text);
+        
+        // Закрываем поток - это важно!
+        await writableStream.close();
+        
+        console.log('Файл успешно сохранен:', handle.name);
+        
     } catch (err) {
-        console.error('Ошибка:', err);
+        // Игнорируем ошибку, если пользователь просто отменил диалог
+        if (err.name !== 'AbortError') {
+            console.error('Ошибка:', err);
+            alert('Ошибка сохранения файла: ' + err.message);
+        }
     }
 }
 
