@@ -1,11 +1,12 @@
 let testData = [];
 let qAmount = 0;
 
-async function processFile() {
-    
+async function processFile(mode) {
+
     qAmount = 0;
 
-    const fileInput = document.getElementById('docxFile');
+    const fileInputDocx = document.getElementById('docxFile');
+    const fileInputCache = document.getElementById('cacheFile');
     const errorDiv = document.getElementById('error');
     const loadingDiv = document.getElementById('loading');
 
@@ -13,14 +14,23 @@ async function processFile() {
     errorDiv.classList.add("hidden");
     loadingDiv.style.display = 'block';
 
-    if (!fileInput.files.length) {
-        errorDiv.textContent = 'Пожалуйста, выберите файл';
-        errorDiv.classList.remove("hidden");
-        loadingDiv.style.display = 'none';
+    if (mode == "new") {
+        if (!fileInputDocx.files.length) {
+            errorDiv.textContent = 'Пожалуйста, выберите файл';
+            errorDiv.classList.remove("hidden");
+            loadingDiv.style.display = 'none';
+            return;
+        }
+
+        const file = fileInputDocx.files[0];
+    }
+
+    if (mode == "cached") {
+        checkFileExists('/questions.txt').then(exists => console.log('Файл существует:', exists));
         return;
     }
 
-    const file = fileInput.files[0];
+
 
     try {
         const arrayBuffer = await file.arrayBuffer();
@@ -40,7 +50,7 @@ async function processFile() {
         );
 
         saveTextFileRobust("questions.txt", result.value);
-        
+
         // Парсим вопросы
         testData = parseQuestions(result.value);
 
@@ -48,7 +58,7 @@ async function processFile() {
         if (mix.checked) {
             testData = shuffleArray(testData);
         }
-        
+
 
         if (testData.length === 0) {
             errorDiv.textContent = 'Не удалось найти вопросы в файле.';
@@ -552,34 +562,7 @@ scrollToTopBtn.addEventListener('click', () => {
 
 // Запись файла
 async function saveTextFileRobust(filename, content) {
-    // Пробуем современный API
-    if ('showSaveFilePicker' in window) {
-        try {
-            const handle = await window.showSaveFilePicker({
-                suggestedName: filename,
-                types: [{
-                    description: 'Text files',
-                    accept: {'text/plain': ['.txt']},
-                }],
-            });
-            
-            // Новый экземпляр потока для каждой записи
-            const writable = await handle.createWritable();
-            
-            // Запись и немедленное закрытие
-            await writable.write(content);
-            await writable.close();
-            
-            return true;
-            
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                return false; // Пользователь отменил
-            }
-            console.warn('File API failed, falling back to download', error);
-        }
-    }
-    
+
     // Всегда работающий fallback
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -590,7 +573,7 @@ async function saveTextFileRobust(filename, content) {
     link.click();
     document.body.removeChild(link);
     setTimeout(() => URL.revokeObjectURL(url), 100);
-    
+
     return true;
 }
 
@@ -600,14 +583,27 @@ async function readFile() {
         const [handle] = await window.showOpenFilePicker({
             types: [{
                 description: 'Text files',
-                accept: {'text/plain': ['.txt']},
+                accept: { 'text/plain': ['.txt'] },
             }],
         });
-        
+
         const file = await handle.getFile();
         const content = await file.text();
         console.log('Содержимое:', content);
     } catch (err) {
         console.error('Ошибка:', err);
+    }
+}
+
+async function checkFileExists(url) {
+    try {
+        const response = await fetch(url, {
+            method: 'HEAD', // Только заголовки, без тела
+            cache: 'no-cache'
+        });
+        
+        return response.ok;
+    } catch (err) {
+        return false;
     }
 }

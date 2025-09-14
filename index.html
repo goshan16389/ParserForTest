@@ -281,7 +281,9 @@
         <div class="upload-section">
             <h3>Загрузите DOCX файл с тестом</h3>
             <input type="file" id="docxFile" accept=".docx">
-            <button onclick="processFile()">📤 Преобразовать в тест</button>
+            <button onclick="processFile('new')">📤 Преобразовать из .docx</button>
+            <input type="file" id="cacheFile" accept=".txt">
+            <button onclick="processFile('cached')">Загрузить из кэша</button>
             <div id="params">
                 <input type="checkbox" id="mix">Перемешать вопросы
             </div>
