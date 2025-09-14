@@ -1,12 +1,23 @@
 let testData = [];
 let qAmount = 0;
+let htmlTest = '';
 
-async function processFile(mode) {
+// Глобальные переменные
+let currentSession = null;
+let allSessions = [];
+
+// Ключи для localStorage
+const SESSIONS_KEY = 'test_sessions_history';
+
+const wrongList = document.querySelector('.wrong-list');
+
+async function processFile(content) {
+
+    updateTotalResult("clear");
 
     qAmount = 0;
 
     const fileInputDocx = document.getElementById('docxFile');
-    const fileInputCache = document.getElementById('cacheFile');
     const errorDiv = document.getElementById('error');
     const loadingDiv = document.getElementById('loading');
 
@@ -14,7 +25,10 @@ async function processFile(mode) {
     errorDiv.classList.add("hidden");
     loadingDiv.style.display = 'block';
 
-    if (mode == "new") {
+    if (content === undefined) {
+
+        loadingDiv.textContent = 'Читаю файл... ⏳';
+
         if (!fileInputDocx.files.length) {
             errorDiv.textContent = 'Пожалуйста, выберите файл';
             errorDiv.classList.remove("hidden");
@@ -23,60 +37,60 @@ async function processFile(mode) {
         }
 
         const file = fileInputDocx.files[0];
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+
+            // Конвертируем DOCX в HTML с изображениями
+            const result = await mammoth.convertToHtml(
+                { arrayBuffer },
+                {
+                    convertImage: mammoth.images.imgElement(function (image) {
+                        return image.read("base64").then(function (imageBuffer) {
+                            return {
+                                src: "data:" + image.contentType + ";base64," + imageBuffer
+                            };
+                        });
+                    })
+                }
+            );
+
+            htmlTest = result.value;
+
+        } catch (error) {
+            errorDiv.textContent = 'Ошибка при обработке файла';
+            errorDiv.classList.remove("hidden");
+            loadingDiv.style.display = 'none';
+            console.error('Error:', error);
+        }
+
+    } else {
+        htmlTest = content;
     }
 
-    if (mode == "cached") {
-        checkFileExists('/questions.txt').then(exists => console.log('Файл существует:', exists));
+    // Парсим вопросы
+    testData = parseQuestions(htmlTest);
+
+    if (testData.length === 0) {
+        errorDiv.textContent = 'Не удалось найти вопросы в файле.';
+        errorDiv.classList.remove("hidden");
+        loadingDiv.style.display = 'none';
         return;
     }
 
-
-
-    try {
-        const arrayBuffer = await file.arrayBuffer();
-
-        // Конвертируем DOCX в HTML с изображениями
-        const result = await mammoth.convertToHtml(
-            { arrayBuffer },
-            {
-                convertImage: mammoth.images.imgElement(function (image) {
-                    return image.read("base64").then(function (imageBuffer) {
-                        return {
-                            src: "data:" + image.contentType + ";base64," + imageBuffer
-                        };
-                    });
-                })
-            }
-        );
-
-        saveTextFileRobust("questions.txt", result.value);
-
-        // Парсим вопросы
-        testData = parseQuestions(result.value);
-
-        const mix = document.getElementById('mix');
-        if (mix.checked) {
-            testData = shuffleArray(testData);
-        }
-
-
-        if (testData.length === 0) {
-            errorDiv.textContent = 'Не удалось найти вопросы в файле.';
-            errorDiv.classList.remove("hidden");
-            loadingDiv.style.display = 'none';
-            return;
-        }
-
-        displayTest(testData);
-        displayGroupSelector(); // показываем селектор групп
-        loadingDiv.style.display = 'none';
-
-    } catch (error) {
-        errorDiv.textContent = 'Ошибка при обработке файла: ' + error.message;
-        errorDiv.classList.remove("hidden");
-        loadingDiv.style.display = 'none';
-        console.error('Error:', error);
+    const shuffler = document.getElementById('shuffle');
+    if (shuffler.classList.contains('loaded')) {
+        testData = shuffleArray(testData);
     }
+
+
+    displayTest(testData);
+    displayGroupSelector(); // показываем селектор групп
+    loadingDiv.style.display = 'none';
+
+    startNewSession();
+
+
 }
 
 function parseQuestions(htmlContent) {
@@ -328,20 +342,22 @@ function checkAnswer(questionIndex, selectedOptionIndex) {
     const optionDiv = document.querySelector(`#q${questionIndex}o${selectedOptionIndex}`).closest('.option');
     const allOptions = document.querySelectorAll(`#question-${questionIndex} .option`);
 
+    const questionNumber = document.querySelector(`#question-${questionIndex} .question-number`);
 
 
-    // Удаляем предыдущие сообщения
-    const oldFeedback = optionDiv.nextElementSibling;
-    if (oldFeedback && oldFeedback.classList.contains('result-feedback')) {
-        oldFeedback.remove();
-    }
 
     // Проверяем ответ
     const isCorrect = selectedOptionIndex === question.correctAnswer;
 
+    // Логируем результат
+    if (isCorrect) {
+        logCorrectAnswer(questionIndex);
+    } else {
+        logError(questionIndex);
+    }
+
     // Применяем стили
     if (isCorrect) {
-        //console.log(optionDiv.classList)
         if (!optionDiv.classList.contains('correct')) {
             if (optionDiv.parentElement.classList.contains('wasincorrect')) {
                 optionDiv.parentElement.classList.remove('wasincorrect');
@@ -349,43 +365,48 @@ function checkAnswer(questionIndex, selectedOptionIndex) {
             }
             optionDiv.classList.add('correct');
             updateTotalResult("+");
-            //console.log("+")
             optionDiv.parentElement.classList.add('wascorrect');
-        }
 
+            if (!questionNumber.classList.contains('red')) {
+                questionNumber.classList.add('green');
+            }
+        }
     } else {
         const parent = optionDiv.parentElement;
-
         if (optionDiv.parentElement.classList.contains('wascorrect')) {
             optionDiv.parentElement.classList.remove('wascorrect');
             updateTotalResult("-+");
+            //return;
+            //раскоментить return, Закоментить строки выше для запрета перевыбора после правильного
         }
-
         const children = Array.from(parent.children);
-
-        // Проверить, есть ли у кого-то из детей класс 'incorrect'
         const hasIncorrectChild = children.some(child =>
             child.classList.contains('incorrect')
         );
         if (hasIncorrectChild) {
             optionDiv.classList.add('incorrect');
-        }
-        else if (!optionDiv.classList.contains('incorrect')) {
+        } else if (!optionDiv.classList.contains('incorrect')) {
             optionDiv.classList.add('incorrect');
             updateTotalResult("-");
-            //console.log("-")
-        }
 
-        parent.classList.add('wasincorrect')
+            if (!document.getElementById(`wrong-${questionIndex}`)) {
+                const questionNumber = question.question.split(' ')[0];
+                wrongList.innerHTML += `<span id="wrong-${questionIndex}" class="wrong-q">${questionNumber}</span>`;
+            }
+        }
+        parent.classList.add('wasincorrect');
+
+        if (!questionNumber.classList.contains('red')) {
+            questionNumber.classList.add('red');
+        }
     }
 
     // Сбрасываем стили всех вариантов
     allOptions.forEach(opt => {
-        if (opt !== optionDiv) { // Не трогаем выбранный вариант
+        if (opt !== optionDiv) {
             opt.classList.remove('correct', 'incorrect');
         }
     });
-
 }
 
 function updateTotalResult(operation) {
@@ -403,6 +424,10 @@ function updateTotalResult(operation) {
         correctP.textContent = 0;
         incorrectP.textContent = 0;
         remainsP.textContent = qAmount;
+
+        // Завершаем текущую сессию
+        endSession();
+
     } else if (operation == "-+") {
         correctP.textContent = Number(correctP.textContent) - 1;
         remainsP.textContent = Number(remainsP.textContent) + 1;
@@ -410,35 +435,6 @@ function updateTotalResult(operation) {
         incorrectP.textContent = Number(incorrectP.textContent) - 1;
         remainsP.textContent = Number(remainsP.textContent) + 1;
     }
-}
-
-function checkAllAnswers() {
-    const resultsDiv = document.getElementById('results');
-    resultsDiv.innerHTML = '';
-
-    let correctCount = 0;
-    let totalCount = window.currentQuestions.length;
-
-    window.currentQuestions.forEach((question, index) => {
-        const isCorrect = question.userAnswer === question.correctAnswer;
-        if (isCorrect) correctCount++;
-
-        const resultDiv = document.createElement('div');
-        resultDiv.className = `result-item ${isCorrect ? 'correct' : 'incorrect'}`;
-        resultDiv.innerHTML = `
-            <strong>Вопрос ${index + 1}:</strong> 
-            ${isCorrect ? '✓ Правильно' : '✗ Неправильно'}
-            ${!isCorrect ? ` (Правильный ответ: ${question.correctAnswer + 1})` : ''}
-        `;
-        resultsDiv.appendChild(resultDiv);
-    });
-
-    const scoreDiv = document.createElement('div');
-    scoreDiv.className = 'score';
-    scoreDiv.innerHTML = `<strong>Результат:</strong> ${correctCount} из ${totalCount}`;
-    resultsDiv.appendChild(scoreDiv);
-
-    resultsDiv.style.display = 'block';
 }
 
 function resetTest() {
@@ -452,11 +448,6 @@ function resetTest() {
         option.classList.remove('correct', 'incorrect');
     });
 
-    // Удаляем фидбэк
-    document.querySelectorAll('.result-feedback').forEach(feedback => {
-        feedback.remove();
-    });
-
     document.querySelectorAll('.wascorrect').forEach(el => {
         el.classList.remove("wascorrect")
     })
@@ -465,8 +456,14 @@ function resetTest() {
         el.classList.remove("wasincorrect")
     })
 
+    document.querySelectorAll('.question-number').forEach(el => {
+        el.classList.remove("green")
+        el.classList.remove("red")
+    })
+
     // Сбрасываем общий результат
     updateTotalResult("clear");
+    scrollToTopBtn.click();
 }
 
 // Функция для перемешивания массива (алгоритм Фишера-Йейтса)
@@ -490,49 +487,126 @@ function filterQuestionsByGroup(groupName) {
     const allQuestionDivs = questionsContainer.querySelectorAll('.question');
 
     allQuestionDivs.forEach(div => {
-        if (groupName === 'all' || div.dataset.group === groupName) {
+        if (groupName === 'all') {
             div.style.display = 'block';
+        } else if (groupName === 'with_images') {
+            // Показываем только вопросы с картинками
+            const hasImages = div.querySelector('img') !== null ||
+                div.innerHTML.includes('data:image');
+            div.style.display = hasImages ? 'block' : 'none';
+        } else if (groupName === 'without_images') {
+            // Показываем только вопросы без картинок
+            const hasImages = div.querySelector('img') !== null ||
+                div.innerHTML.includes('data:image');
+            div.style.display = hasImages ? 'none' : 'block';
         } else {
-            div.style.display = 'none';
+            // Обычная фильтрация по группе
+            div.style.display = div.dataset.group === groupName ? 'block' : 'none';
         }
     });
 
     // Обновляем текущие вопросы для проверки ответов
     if (groupName === 'all') {
         window.currentQuestions = window.allQuestions;
+    } else if (groupName === 'with_images') {
+        window.currentQuestions = window.allQuestions.filter(hasQuestionImages);
+    } else if (groupName === 'without_images') {
+        window.currentQuestions = window.allQuestions.filter(q => !hasQuestionImages(q));
     } else {
         window.currentQuestions = window.allQuestions.filter(q => q.group === groupName);
     }
 
     // Сбрасываем результаты
-    //document.getElementById('results').style.display = 'none';
+    // document.getElementById('results').style.display = 'none';
+}
+
+// Функция проверки наличия картинок в вопросе
+function hasQuestionImages(question) {
+    // Проверяем вопрос
+    const questionHasImages = question.question.includes('<img') ||
+        question.question.includes('data:image') ||
+        question.question.includes('src=');
+
+    // Проверяем варианты ответов
+    const optionsHaveImages = question.options.some(option =>
+        option.includes('<img') ||
+        option.includes('data:image') ||
+        option.includes('src=')
+    );
+
+    // Проверяем объяснение (если есть)
+    const explanationHasImages = question.explanation &&
+        (question.explanation.includes('<img') ||
+            question.explanation.includes('data:image') ||
+            question.explanation.includes('src='));
+
+    return questionHasImages || optionsHaveImages || explanationHasImages;
 }
 
 function displayGroupSelector() {
     const groupSelector = document.getElementById('groupSelector');
     const groupSelect = document.createElement('select');
-
     groupSelect.classList.add('mySelect');
 
-    groupSelect.innerHTML = '<option value="all">Все вопросы</option>';
+    // Подсчитываем вопросы с картинками по фактически отображенным элементам
+    let withImagesCount = 0;
+    let withoutImagesCount = 0;
 
-    // Получаем уникальные группы
+    const questionsContainer = document.getElementById('questions');
+    if (questionsContainer) {
+        const questionElements = questionsContainer.querySelectorAll('.question');
+        questionElements.forEach(div => {
+            if (div.querySelector('img')) {
+                withImagesCount++;
+            } else {
+                withoutImagesCount++;
+            }
+        });
+    } else {
+        // Fallback: используем фильтрацию по данным
+        withImagesCount = window.allQuestions.filter(hasQuestionImages).length;
+        withoutImagesCount = window.allQuestions.length - withImagesCount;
+    }
+
+    const totalQuestions = window.allQuestions.length;
+
+    groupSelect.innerHTML = `
+        <option value="all">Все вопросы (${totalQuestions})</option>
+        <option value="with_images">🖼️ С картинками (${withImagesCount})</option>
+        <option value="without_images">📝 Без картинок (${withoutImagesCount})</option>
+    `;
+
+    // Получаем уникальные группы и подсчитываем количество вопросов в каждой
     const groups = [...new Set(window.allQuestions.map(q => q.group))];
+    const groupCounts = {};
 
+    // Считаем вопросы по группам
+    window.allQuestions.forEach(question => {
+        if (question.group) {
+            groupCounts[question.group] = (groupCounts[question.group] || 0) + 1;
+        }
+    });
+
+    // Сортируем группы
     const sorted = groups.sort((a, b) => {
-        const numA = parseInt(a.match(/\d+/)[0]);
-        const numB = parseInt(b.match(/\d+/)[0]);
+        const numA = parseInt(a.match(/\d+/)?.[0] || 0);
+        const numB = parseInt(b.match(/\d+/)?.[0] || 0);
         return numA - numB;
-    })
+    });
 
+    // Добавляем обычные группы с количеством вопросов
     sorted.forEach(group => {
         if (group) {
-            groupSelect.innerHTML += `<option value="${group}">${group}</option>`;
+            const count = groupCounts[group] || 0;
+            groupSelect.innerHTML += `<option value="${group}">${group} (${count})</option>`;
         }
     });
 
     groupSelect.onchange = function () {
         filterQuestionsByGroup(this.value);
+        if (typeof scrollToTopBtn !== 'undefined' && scrollToTopBtn) {
+            scrollToTopBtn.click();
+        }
     };
 
     groupSelector.innerHTML = '';
@@ -560,50 +634,328 @@ scrollToTopBtn.addEventListener('click', () => {
     });
 });
 
-// Запись файла
-async function saveTextFileRobust(filename, content) {
 
-    // Всегда работающий fallback
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => URL.revokeObjectURL(url), 100);
 
-    return true;
-}
+// Работа с IndexedDB для больших объемов данных
+class FileDB {
+    constructor() {
+        this.dbName = 'FilesDB';
+        this.storeName = 'files';
+        this.db = null;
+    }
 
-// Чтение файла
-async function readFile() {
-    try {
-        const [handle] = await window.showOpenFilePicker({
-            types: [{
-                description: 'Text files',
-                accept: { 'text/plain': ['.txt'] },
-            }],
+    async init() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.dbName, 1);
+
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+                this.db = request.result;
+                resolve();
+            };
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(this.storeName)) {
+                    db.createObjectStore(this.storeName);
+                }
+            };
         });
+    }
 
-        const file = await handle.getFile();
-        const content = await file.text();
-        console.log('Содержимое:', content);
-    } catch (err) {
-        console.error('Ошибка:', err);
+    async saveFile(filename, content) {
+        const transaction = this.db.transaction([this.storeName], 'readwrite');
+        const store = transaction.objectStore(this.storeName);
+        store.put(content, filename);
+        return new Promise((resolve) => {
+            transaction.oncomplete = resolve;
+        });
+    }
+
+    async loadFile(filename) {
+        const transaction = this.db.transaction([this.storeName], 'readonly');
+        const store = transaction.objectStore(this.storeName);
+        const request = store.get(filename);
+        return new Promise((resolve, reject) => {
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
     }
 }
 
-async function checkFileExists(url) {
+const fileDB = new FileDB();
+
+const toCacheButton = document.getElementById("toCache");
+const fromCacheButton = document.getElementById("fromCache");
+
+toCacheButton.addEventListener("click", async function () {
+
+    await fileDB.init();
+    await fileDB.saveFile("questions.txt", htmlTest).then(() => console.log("Файл успешно сохранен."));
+
+});
+
+fromCacheButton.addEventListener("click", async function () {
+
+    await fileDB.init();
+    const content = await fileDB.loadFile("questions.txt");
+    if (content) {
+        processFile(content);
+    } else {
+        console.log("Файл не найден.");
+    }
+});
+
+async function checkCache(storeName, key) {
     try {
-        const response = await fetch(url, {
-            method: 'HEAD', // Только заголовки, без тела
-            cache: 'no-cache'
+        // Убедимся, что база инициализирована
+        if (!fileDB.db) {
+            await fileDB.init();
+        }
+
+        const transaction = fileDB.db.transaction([storeName], 'readonly');
+        const store = transaction.objectStore(storeName);
+        const request = store.get(key);
+
+        return new Promise((resolve, reject) => {
+            request.onsuccess = () => {
+                const value = request.result;
+
+                // Множественные проверки на пустоту
+                const isValid = (
+                    value !== undefined &&
+                    value !== null &&
+                    value !== '' &&
+                    !(typeof value === 'string' && value.trim() === '') &&
+                    !(Array.isArray(value) && value.length === 0) &&
+                    !(typeof value === 'object' && value && Object.keys(value).length === 0)
+                );
+
+                resolve({
+                    exists: value !== undefined,
+                    isValid: isValid,
+                    value: value,
+                    type: typeof value
+                });
+            };
+
+            request.onerror = () => {
+                console.error('Ошибка запроса:', request.error);
+                reject(request.error);
+            };
         });
-        
-        return response.ok;
-    } catch (err) {
-        return false;
+
+    } catch (error) {
+        console.error('Ошибка в checkCache:', error);
+        return {
+            exists: false,
+            isValid: false,
+            value: null,
+            error: error.message
+        };
     }
 }
+
+async function checkCacheOnLoad() {
+    const loadingDiv = document.getElementById('loading');
+    loadingDiv.textContent = 'Читаю кэш... ⏳';
+    loadingDiv.style.display = 'block';
+    try {
+        console.log('🔄 Начинаем проверку кэша...');
+
+        const result = await checkCache('files', 'questions.txt');
+
+        if (result.isValid) {
+            console.log('✅ Файл существует и не пустой, загружаю...');
+            fromCacheButton.click();
+
+        } else if (result.exists) {
+            console.log('⚠️ Файл существует, но пустой');
+
+        } else {
+            console.log('❌ Файл не существует');
+        }
+
+    } catch (error) {
+        console.error('❌ Ошибка при проверке кэша:', error);
+    }
+}
+
+
+
+
+// Инициализация при загрузке страницы
+function initSessions() {
+    loadSessionsHistory();
+}
+
+// Загрузка истории сессий из localStorage
+function loadSessionsHistory() {
+    try {
+        const savedSessions = localStorage.getItem(SESSIONS_KEY);
+        if (savedSessions) {
+            allSessions = JSON.parse(savedSessions);
+        }
+    } catch (error) {
+        console.warn('Не удалось загрузить историю сессий:', error);
+        allSessions = [];
+    }
+}
+
+// Сохранение истории сессий в localStorage
+function saveSessionsHistory() {
+    try {
+        localStorage.setItem(SESSIONS_KEY, JSON.stringify(allSessions));
+    } catch (error) {
+        console.warn('Не удалось сохранить историю сессий:', error);
+    }
+}
+
+// Начало новой сессии при загрузке теста
+function startNewSession() {
+    currentSession = {
+        id: Date.now(),
+        startTime: new Date().toLocaleString(),
+        endTime: null,
+        errors: [], // массив номеров вопросов с ошибками
+        totalQuestions: qAmount,
+        correctAnswers: 0,
+        incorrectAnswers: 0
+    };
+}
+
+// Завершение сессии при сбросе теста
+function endSession() {
+    if (!currentSession) return;
+
+    if (currentSession.correctAnswers === 0 && currentSession.incorrectAnswers === 0) return;
+
+    currentSession.endTime = new Date().toLocaleString();
+
+    // Добавляем сессию в историю
+    allSessions.push(currentSession);
+
+    // Сохраняем историю
+    saveSessionsHistory();
+
+    // Сбрасываем текущую сессию
+    currentSession = null;
+
+    startNewSession();
+}
+
+// Получение статистики текущей сессии
+function getCurrentSessionStats() {
+    if (!currentSession) return null;
+
+    return {
+        totalQuestions: currentSession.totalQuestions,
+        correctAnswers: currentSession.correctAnswers,
+        incorrectAnswers: currentSession.incorrectAnswers,
+        errorCount: currentSession.errors.length,
+        isCompleted: currentSession.endTime !== null
+    };
+}
+
+// Логирование ошибки
+function logError(questionIndex) {
+    if (!currentSession) return;
+
+    // Проверяем, есть ли уже такая ошибка в сессии
+    if (!currentSession.errors.includes(questionIndex)) {
+        currentSession.errors.push(questionIndex);
+        currentSession.incorrectAnswers++;
+    }
+}
+
+// Логирование правильного ответа
+function logCorrectAnswer(questionIndex) {
+    if (!currentSession) return;
+
+    // Проверяем, есть ли уже такая ошибка в сессии
+    if (!currentSession.errors.includes(questionIndex)) {
+        currentSession.correctAnswers++;
+    }
+}
+
+// Сохранение сессии перед закрытием/перезагрузкой
+window.addEventListener('beforeunload', function (event) {
+    if (currentSession) {
+        endSession();
+    }
+});
+
+// При загрузке страницы
+document.addEventListener('DOMContentLoaded', function () {
+    checkCacheOnLoad();
+    initSessions();
+});
+
+
+document.getElementById('docxFile').addEventListener('change', function (e) {
+    const fileButton = this.parentElement;
+    const buttonText = fileButton.querySelector('.file-button-text');
+    const img = document.getElementById("processDocx");
+
+    if (this.files.length > 0) {
+        const fileName = this.files[0].name;
+
+        // Обрезаем длинное имя файла
+        const displayName = fileName.length > 20
+            ? fileName.substring(0, 17) + '...'
+            : fileName;
+
+        buttonText.textContent = `📄 ${displayName}`;
+        buttonText.classList.add('has-file');
+        img.classList.add('loaded');
+
+
+    } else {
+        buttonText.textContent = '📄 Выбрать DOCX файл';
+        buttonText.classList.remove('has-file');
+    }
+});
+
+document.getElementById('shuffle').addEventListener('click', function () {
+    if (this.classList.contains('loaded')) {
+        this.classList.remove('loaded');
+    } else {
+        this.classList.add('loaded');
+    }
+})
+
+const tooltip = document.getElementById(`global-tooltip`);
+const images = document.querySelectorAll(`.top-btn`);
+
+// Добавляем обработчики для каждой картинки
+images.forEach(img => {
+    img.addEventListener('mouseover', (event) => {
+        const rect = img.getBoundingClientRect();
+
+        tooltip.textContent = img.alt;
+        tooltip.style.left = (rect.right + window.scrollX) + 'px';
+        tooltip.style.top = (rect.bottom + window.scrollY) + 'px';
+        tooltip.style.opacity = '1';
+    });
+
+    img.addEventListener('mouseout', () => {
+        tooltip.style.opacity = '0';
+    });
+});
+
+
+wrongList.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    wrongList.scrollLeft += e.deltaY * 3;
+});
+
+// Вешаем обработчик на родительский элемент
+wrongList.addEventListener('click', function (event) {
+    // Проверяем, что кликнули по элементу с классом wrong-q
+    if (event.target.classList.contains('wrong-q')) {
+        const number = event.target.id.split('-')[1];
+        const question = document.getElementById(`question-${number}`);
+        question.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest', offset: { top: -40 } });
+        // Ваша логика здесь
+    }
+});
