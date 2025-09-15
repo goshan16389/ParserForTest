@@ -389,6 +389,8 @@ function checkAnswer(questionIndex, selectedOptionIndex) {
     // Логируем результат
     if (isCorrect) {
         logCorrectAnswer(questionIndex);
+        const question = document.getElementById(`question-${questionIndex}`);
+        scrollToNextVisibleQuestion("next", question);
     } else {
         logError(questionIndex);
     }
@@ -767,14 +769,14 @@ toCacheButton.addEventListener("click", async function () {
 clearCacheButton.addEventListener("click", async function () {
 
     await fileDB.init();
-    
+
     const prevText = infoDiv.textContent;
     await fileDB.deleteFile("questions.txt");
 
     infoDiv.style.display = 'block';
     setTimeout(() => {
         infoDiv.textContent = prevText;
-        if (prevText == "Читаю кэш... ⏳" || prevText == "Читаю файл... ⏳" || prevText == "Ищу на сервере... ⏳") infoDiv.style.display='none';
+        if (prevText == "Читаю кэш... ⏳" || prevText == "Читаю файл... ⏳" || prevText == "Ищу на сервере... ⏳") infoDiv.style.display = 'none';
     }, 1000);
 
 });
@@ -784,7 +786,7 @@ fromCacheButton.addEventListener("click", async function () {
     await fileDB.init();
     const content = await fileDB.loadFile("questions.txt");
     if (content) {
-        
+
         infoDiv.style.display = 'block';
         infoDiv.textContent = 'Читаю кэш... ⏳'
 
@@ -1056,7 +1058,36 @@ wrongList.addEventListener('click', function (event) {
     if (event.target.classList.contains('wrong-q')) {
         const number = event.target.id.split('-')[1];
         const question = document.getElementById(`question-${number}`);
-        question.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest', offset: { top: -40 } });
+        
+        scrollToNextVisibleQuestion("cur", question);
         // Ваша логика здесь
     }
 });
+
+function scrollToNextVisibleQuestion(mode, currentElement, offset = 80) {
+    let next = currentElement;
+    if (mode != "cur") {
+        next = currentElement.nextElementSibling;
+    }
+
+    while (next) {
+        if (next.id && next.id.startsWith('question-')) {
+            const style = window.getComputedStyle(next);
+            if (style.display !== 'none' && style.visibility !== 'hidden' && next.offsetParent !== null) {
+                // Скроллим с учётом отступа
+                const elementTop = next.getBoundingClientRect().top + window.pageYOffset;
+                const scrollToPosition = elementTop - offset;
+
+                window.scrollTo({
+                    top: scrollToPosition,
+                    behavior: 'smooth'
+                });
+
+                return;
+            }
+        }
+        next = next.nextElementSibling;
+    }
+
+    console.log('Следующего видимого вопроса ниже нет');
+}
