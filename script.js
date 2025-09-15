@@ -500,6 +500,8 @@ function resetTest() {
         el.classList.remove("red")
     })
 
+    document.querySelector('.wrong-list').innerHTML = '';
+
     // Сбрасываем общий результат
     updateTotalResult("clear");
     scrollToTopBtn.click();
