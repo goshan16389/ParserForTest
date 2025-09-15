@@ -400,21 +400,21 @@ function checkAnswer(questionIndex, selectedOptionIndex) {
         if (!optionDiv.classList.contains('correct')) {
             if (optionDiv.parentElement.classList.contains('wasincorrect')) {
                 optionDiv.parentElement.classList.remove('wasincorrect');
-                updateTotalResult("--");
+                //updateTotalResult("--");
             }
             optionDiv.classList.add('correct');
-            updateTotalResult("+");
             optionDiv.parentElement.classList.add('wascorrect');
 
             if (!questionNumber.classList.contains('red')) {
                 questionNumber.classList.add('green');
+                updateTotalResult("+");
             }
         }
     } else {
         const parent = optionDiv.parentElement;
         if (optionDiv.parentElement.classList.contains('wascorrect')) {
             optionDiv.parentElement.classList.remove('wascorrect');
-            updateTotalResult("-+");
+            //updateTotalResult("-+");
             //return;
             //раскоментить return, Закоментить строки выше для запрета перевыбора после правильного
         }
@@ -426,7 +426,6 @@ function checkAnswer(questionIndex, selectedOptionIndex) {
             optionDiv.classList.add('incorrect');
         } else if (!optionDiv.classList.contains('incorrect')) {
             optionDiv.classList.add('incorrect');
-            updateTotalResult("-");
 
             if (!document.getElementById(`wrong-${questionIndex}`)) {
                 const questionNumber = question.question.split(' ')[0];
@@ -437,6 +436,7 @@ function checkAnswer(questionIndex, selectedOptionIndex) {
 
         if (!questionNumber.classList.contains('red')) {
             questionNumber.classList.add('red');
+            updateTotalResult("-");
         }
     }
 
