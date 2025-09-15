@@ -718,6 +718,28 @@ class FileDB {
             request.onerror = () => reject(request.error);
         });
     }
+
+    async deleteFile(filename) {
+        const transaction = this.db.transaction([this.storeName], 'readwrite');
+        const store = transaction.objectStore(this.storeName);
+
+        const getRequest = store.get(filename);
+
+        return new Promise((resolve, reject) => {
+            getRequest.onsuccess = () => {
+                if (getRequest.result === undefined) {
+                    infoDiv.textContent = "Кэш отсутствует! ✅";
+                    resolve(); // просто резолвим без ошибки
+                } else {
+                    const deleteRequest = store.delete(filename);
+                    deleteRequest.onsuccess = () => resolve();
+                    deleteRequest.onerror = () => reject(deleteRequest.error);
+                    infoDiv.textContent = "Кэш очищен! ✅";
+                }
+            };
+            getRequest.onerror = () => reject(getRequest.error);
+        });
+    }
 }
 
 const fileDB = new FileDB();
@@ -725,11 +747,35 @@ const fileDB = new FileDB();
 const toCacheButton = document.getElementById("toCache");
 const fromCacheButton = document.getElementById("fromCache");
 const fromServer = document.getElementById("fromServer");
+const clearCacheButton = document.getElementById("clearCache");
+const infoDiv = document.getElementById("loading")
 
 toCacheButton.addEventListener("click", async function () {
 
     await fileDB.init();
     await fileDB.saveFile("questions.txt", htmlTest).then(() => console.log("Файл успешно сохранен."));
+
+    const prevText = infoDiv.textContent;
+    infoDiv.style.display = 'block';
+    infoDiv.textContent = "Запись добавлена в кэш! ✅";
+    setTimeout(() => {
+        infoDiv.textContent = "Загрузите запись из кэша ⚠️";
+    }, 1000);
+
+});
+
+clearCacheButton.addEventListener("click", async function () {
+
+    await fileDB.init();
+    
+    const prevText = infoDiv.textContent;
+    await fileDB.deleteFile("questions.txt");
+
+    infoDiv.style.display = 'block';
+    setTimeout(() => {
+        infoDiv.textContent = prevText;
+        if (prevText == "Читаю кэш... ⏳" || prevText == "Читаю файл... ⏳" || prevText == "Ищу на сервере... ⏳") infoDiv.style.display='none';
+    }, 1000);
 
 });
 
@@ -738,9 +784,17 @@ fromCacheButton.addEventListener("click", async function () {
     await fileDB.init();
     const content = await fileDB.loadFile("questions.txt");
     if (content) {
-        processFile(content);
+        
+        infoDiv.style.display = 'block';
+        infoDiv.textContent = 'Читаю кэш... ⏳'
+
+        setTimeout(() => {
+            processFile(content);
+        }, 1000);
+
     } else {
         console.log("Файл не найден.");
+        infoDiv.textContent = "Запись в кэше не найдена или пуста! ⚠️";
     }
 });
 

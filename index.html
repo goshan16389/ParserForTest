@@ -113,7 +113,8 @@
         #shuffle.loaded,
         #toCache:hover,
         #fromCache:hover,
-        .reset, #fromServer:hover {
+        .reset, #fromServer:hover,
+        #clearCache:hover {
             background-color: #4ec987;
         }
 
@@ -156,7 +157,7 @@
         .mySelect,
         .error,
         .loading,
-        .reset, #fromServer {
+        .reset, #fromServer, #clearCache {
             margin-left: 5px;
         }
 
@@ -270,7 +271,6 @@
             line-height: 30px;
             background: #f8d7da;
             border-radius: 5px;
-            border: 1px solid #f5c6cb;
         }
 
         .hidden {
@@ -398,6 +398,7 @@
 
             <img src="Assets/upload.svg" id="toCache" class="top-btn" alt="Сохранить текущие вопросы в кэш">
             <img src="Assets/download.svg" id="fromCache" class="top-btn" alt="Загрузить вопросы из кэша">
+            <img src="Assets/clear.svg" id="clearCache" class="top-btn" alt="Очистить кэш">
 
             <img src="Assets/reset.svg" onclick="resetTest()" class="top-btn reset" alt="Начать заново">
 
