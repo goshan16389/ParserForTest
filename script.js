@@ -815,11 +815,11 @@ async function checkCacheOnLoad() {
 
         } else if (result.exists) {
             console.log('⚠️ Файл существует, но пустой');
-            loadingDiv.style.display = 'none';
+            loadingDiv.textContent = 'Запись в кэше некорректна, загрузите файл с сервера или ПК 📁';
 
         } else {
             console.log('❌ Файл не существует');
-            loadingDiv.style.display = 'none';
+            loadingDiv.textContent = 'Запись в кэше отсутствует, загрузите файл с сервера или ПК 📁';
         }
 
     } catch (error) {
