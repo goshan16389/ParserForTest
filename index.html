@@ -12,6 +12,7 @@
             margin: 50px auto;
             padding: 20px;
             background-color: #f5f5f5;
+            overflow-x: hidden; /* Prevent body horizontal scroll */
         }
 
         #global-tooltip {
@@ -26,7 +27,7 @@
             pointer-events: none;
             z-index: 1000;
             max-width: 200px;
-            transition: 0.1s ease-in-out;
+            box-sizing: border-box;
         }
 
         .fixed-menu-top {
@@ -34,11 +35,18 @@
             top: 0;
             left: 0;
             width: 100%;
+            max-width: 100%; /* Ensure no overflow */
             background: white;
             z-index: 1000;
             background-color: #e1d2fa;
             display: flex;
             flex-direction: column;
+            box-sizing: border-box;
+            transition: transform 0.3s ease;
+        }
+
+        .fixed-menu-top.hidden {
+            transform: translateY(-100%);
         }
 
         .wrong-list {
@@ -51,13 +59,10 @@
             overflow-x: auto;
             padding: 2px 2px;
             white-space: nowrap;
-            /* Запрещаем перенос строк */
             scrollbar-width: none;
-            /* Скрываем скроллбар в Firefox */
             -ms-overflow-style: none;
-            /* Скрываем скроллбар в IE */
-
             scroll-behavior: smooth;
+            box-sizing: border-box;
         }
 
         .wrong-list::-webkit-scrollbar {
@@ -72,10 +77,8 @@
             line-height: 20px;
             border-radius: 25px;
             padding: 0 5px 0 5px;
-
             flex-shrink: 0;
             text-align: center;
-
             cursor: pointer;
         }
 
@@ -86,6 +89,8 @@
         .functions {
             display: flex;
             padding: 5px;
+            box-sizing: border-box;
+            width: 100%;
         }
 
         .functions img {
@@ -96,10 +101,12 @@
             background-color: #6b46c1;
             cursor: pointer;
             border-radius: 5px;
+            width: 30px;
+            height: 30px;
+            flex-shrink: 0;
         }
 
         #processDocx {
-
             border-top-left-radius: 0;
             border-bottom-left-radius: 0;
         }
@@ -113,7 +120,8 @@
         #shuffle.loaded,
         #toCache:hover,
         #fromCache:hover,
-        .reset, #fromServer:hover,
+        .reset,
+        #fromServer:hover,
         #clearCache:hover {
             background-color: #4ec987;
         }
@@ -137,6 +145,7 @@
             line-height: 30px;
             padding: 0 5px 0 5px;
             border-right: 2px solid #7c4ceb;
+            box-sizing: border-box;
         }
 
         .file-button-text:hover {
@@ -157,7 +166,9 @@
         .mySelect,
         .error,
         .loading,
-        .reset, #fromServer, #clearCache {
+        .reset,
+        #fromServer,
+        #clearCache {
             margin-left: 5px;
         }
 
@@ -178,7 +189,7 @@
 
         .test-container {
             display: none;
-            margin-top: 30px;
+            margin-top: 60px; /* Adjusted to match header height */
         }
 
         .question {
@@ -342,11 +353,9 @@
             transition: opacity 0.3s, visibility 0.3s;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
             z-index: 1000;
-
             display: flex;
             align-items: center;
             justify-content: center;
-
             transition: ease-in-out 0.5s;
         }
 
@@ -376,7 +385,144 @@
             background: #d4edda;
             color: #28a745;
         }
-    </style>
+
+        /* --- Адаптив для мобильных --- */
+        @media (max-width: 768px) {
+            body {
+                margin: 0; /* Remove margins to use full viewport */
+                padding: 10px;
+                max-width: 100%; /* Ensure body fits viewport */
+            }
+
+            .fixed-menu-top {
+                padding: 5px;
+                max-width: 100vw; /* Explicitly limit to viewport width */
+                overflow-x: hidden; /* Prevent horizontal scroll */
+            }
+
+            .functions {
+                flex-wrap: wrap;
+                gap: 5px;
+                justify-content: flex-start; /* Align left to avoid overflow */
+                max-width: 100%; /* Ensure no overflow */
+                overflow-x: hidden;
+            }
+
+            .functions img {
+                height: 28px;
+            }
+
+            .top-btn {
+                width: 28px;
+                height: 28px;
+            }
+
+            .file-button-text {
+                font-size: 14px;
+                padding: 0 8px;
+                line-height: 28px;
+                max-width: 150px; /* Limit width to prevent overflow */
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .mySelect {
+                font-size: 16px;
+                height: 28px;
+                max-width: 150px; /* Prevent select from overflowing */
+            }
+
+            .totalResult {
+                flex-wrap: nowrap;
+                height: auto;
+                padding: 2px;
+                max-width: 120px; /* Limit width */
+                overflow: hidden;
+            }
+
+            .number {
+                font-size: 16px;
+                margin: 0 3px;
+            }
+
+            #correctAmount,
+            #incorrectAmount,
+            #remainsAmount {
+                padding: 0 3px;
+            }
+
+            .test-container {
+                margin-top: 60px; /* Adjusted for header */
+            }
+
+            .question {
+                padding: 10px;
+                margin-bottom: 20px;
+            }
+
+            .question-text {
+                font-size: 16px;
+            }
+
+            .question-number {
+                width: 24px;
+                height: 24px;
+                font-size: 14px;
+                margin-right: 10px;
+            }
+
+            .option {
+                padding: 8px;
+                margin: 8px 0;
+                font-size: 14px;
+            }
+
+            .option input {
+                margin-right: 10px;
+                transform: scale(1.2);
+            }
+
+            .scroll-to-top {
+                width: 60px;
+                height: 60px;
+                bottom: 15px;
+                right: 15px;
+            }
+
+            .pedro {
+                width: 60px;
+                height: 60px;
+            }
+
+            .wrong-list {
+                height: 24px;
+                padding: 2px;
+            }
+
+            .wrong-q {
+                min-width: 20px;
+                line-height: 24px;
+                font-size: 14px;
+                padding: 0 4px;
+            }
+
+            .error,
+            .loading {
+                font-size: 14px;
+                height: 24px;
+                line-height: 24px;
+                max-width: 100%; /* Prevent overflow */
+            }
+
+            #global-tooltip {
+                max-width: 80vw; /* Limit tooltip width */
+                left: 10px !important; /* Prevent right overflow */
+                transform: translateX(0); /* Reset any rightward shift */
+            }
+        }
+</style>
+
 </head>
 
 <body>
@@ -400,8 +546,6 @@
             <img src="Assets/download.svg" id="fromCache" class="top-btn" alt="Загрузить вопросы из кэша">
             <img src="Assets/clear.svg" id="clearCache" class="top-btn" alt="Очистить кэш">
 
-            <img src="Assets/reset.svg" onclick="resetTest()" class="top-btn reset" alt="Начать заново">
-
             <div id="error" class="error hidden"></div>
             <div id="loading" class="loading" style="display: none;">
                 <p></p>
@@ -415,7 +559,6 @@
                 <p id="incorrectAmount" class="number">0</p>
                 <p id="remainsAmount" class="number">666</p>
             </div>
-
             <img src="Assets/reset.svg" onclick="resetTest()" class="top-btn reset" alt="Начать заново">
 
         </div>
