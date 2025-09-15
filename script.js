@@ -759,7 +759,7 @@ toCacheButton.addEventListener("click", async function () {
     infoDiv.style.display = 'block';
     infoDiv.textContent = "Запись добавлена в кэш! ✅";
     setTimeout(() => {
-        infoDiv.textContent = "Загрузите запись из кэша ⚠️";
+        infoDiv.style.display = 'none';
     }, 1000);
 
 });
@@ -794,6 +794,7 @@ fromCacheButton.addEventListener("click", async function () {
 
     } else {
         console.log("Файл не найден.");
+        infoDiv.style.display = 'block';
         infoDiv.textContent = "Запись в кэше не найдена или пуста! ⚠️";
     }
 });
