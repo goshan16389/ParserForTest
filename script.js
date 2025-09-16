@@ -311,11 +311,11 @@ function checkAnswer(questionIndex, selectedOptionIndex, addResult) {
     const isCorrect = selectedOptionIndex === question.correctAnswer;
 
     if (isCorrect) {
-        logCorrectAnswer(questionIndex);
+        if(addResult) logCorrectAnswer(questionIndex);
         const question = document.getElementById(`question-${questionIndex}`);
         scrollToNextVisibleQuestion("next", question);
     } else {
-        logError(questionIndex);
+        if(addResult) logError(questionIndex);
     }
 
     if (isCorrect) {
