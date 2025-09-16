@@ -886,17 +886,20 @@ wrongList.addEventListener('click', function (event) {
 });
 
 function scrollToNextVisibleQuestion(mode, currentElement, offset = 80) {
-
-    let next = currentElement;
-    if (mode !== "cur") {
+    let target = currentElement;
+    if (mode === "next") {
         if (isMobile) return;
-        next = currentElement.nextElementSibling;
+        target = currentElement.nextElementSibling;
+    } else if (mode === "prev") {
+        if (isMobile) return;
+        target = currentElement.previousElementSibling;
     }
-    while (next) {
-        if (next.id && next.id.startsWith('question-')) {
-            const style = window.getComputedStyle(next);
-            if (style.display !== 'none' && style.visibility !== 'hidden' && next.offsetParent !== null) {
-                const elementRect = next.getBoundingClientRect();
+
+    while (target) {
+        if (target.id && target.id.startsWith('question-')) {
+            const style = window.getComputedStyle(target);
+            if (style.display !== 'none' && style.visibility !== 'hidden' && target.offsetParent !== null) {
+                const elementRect = target.getBoundingClientRect();
                 const elementTop = elementRect.top + window.scrollY;
                 const scrollToPosition = elementTop - offset;
                 const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
@@ -908,7 +911,45 @@ function scrollToNextVisibleQuestion(mode, currentElement, offset = 80) {
                 return;
             }
         }
-        next = next.nextElementSibling;
+        target = mode === "prev" ? target.previousElementSibling : target.nextElementSibling;
     }
-    console.log('Следующего видимого вопроса ниже нет');
+    console.log(mode === "prev" ? 'Предыдущего видимого вопроса выше нет' : 'Следующего видимого вопроса ниже нет');
 }
+
+document.addEventListener('keydown', function (event) {
+    const questionsContainer = document.getElementById('questions');
+    if (!questionsContainer) return;
+
+    // Найти текущий видимый вопрос
+    const questions = questionsContainer.querySelectorAll('.question');
+    let currentQuestion = null;
+    for (const question of questions) {
+        const rect = question.getBoundingClientRect();
+        if (rect.top >= 0 && rect.top < window.innerHeight) {
+            currentQuestion = question;
+            break;
+        }
+    }
+
+    if (!currentQuestion) return;
+
+    // Переключение вопросов
+    if (event.key.toLowerCase() === 'q') {
+        event.preventDefault();
+        scrollToNextVisibleQuestion('prev', currentQuestion);
+    } else if (event.key.toLowerCase() === 'e') {
+        event.preventDefault();
+        scrollToNextVisibleQuestion('next', currentQuestion);
+    }
+
+    // Выбор ответа цифрами 1-6
+    const optionIndex = parseInt(event.key) - 1; // Преобразуем 1-6 в 0-5
+    if (!isNaN(optionIndex) && optionIndex >= 0 && optionIndex <= 5) {
+        event.preventDefault();
+        const questionIndex = parseInt(currentQuestion.id.replace('question-', ''));
+        const options = currentQuestion.querySelectorAll('.option');
+        if (optionIndex < options.length) {
+            selectOption(questionIndex, optionIndex);
+        }
+    }
+});
