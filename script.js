@@ -289,10 +289,10 @@ function displayTest(questions) {
 
 function selectOption(questionIndex, optionIndex, event) {
     if (event) event.stopPropagation();
-    checkAnswer(questionIndex, optionIndex);
+    checkAnswer(questionIndex, optionIndex, true);
 }
 
-function checkAnswer(questionIndex, selectedOptionIndex) {
+function checkAnswer(questionIndex, selectedOptionIndex, addResult) {
     const question = testData[questionIndex];
     const optionDiv = document.querySelector(`#q${questionIndex}o${selectedOptionIndex}`).closest('.option');
     const allOptions = document.querySelectorAll(`#question-${questionIndex} .option`);
@@ -327,7 +327,7 @@ function checkAnswer(questionIndex, selectedOptionIndex) {
             optionDiv.parentElement.classList.add('wascorrect');
             if (!questionNumber.classList.contains('red')) {
                 questionNumber.classList.add('green');
-                updateTotalResult("+");
+                if(addResult) updateTotalResult("+");
             }
         }
     } else {
@@ -350,7 +350,7 @@ function checkAnswer(questionIndex, selectedOptionIndex) {
         parent.classList.add('wasincorrect');
         if (!questionNumber.classList.contains('red')) {
             questionNumber.classList.add('red');
-            updateTotalResult("-");
+            if(addResult) updateTotalResult("-");
         }
     }
 
@@ -762,7 +762,7 @@ function loadSession() {
                         : -1;
 
                     if (restoredOptionIndex !== -1) {
-                        checkAnswer(questionIndex, restoredOptionIndex);
+                        checkAnswer(questionIndex, restoredOptionIndex, false);
                     }
                 });
                 const correctP = document.getElementById('correctAmount');
