@@ -333,7 +333,8 @@ function checkAnswer(questionIndex, selectedOptionIndex) {
     } else {
         const parent = optionDiv.parentElement;
         if (optionDiv.parentElement.classList.contains('wascorrect')) {
-            optionDiv.parentElement.classList.remove('wascorrect');
+            return
+            //optionDiv.parentElement.classList.remove('wascorrect');
         }
         const children = Array.from(parent.children);
         const hasIncorrectChild = children.some(child => child.classList.contains('incorrect'));
