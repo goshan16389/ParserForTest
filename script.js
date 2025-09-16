@@ -302,7 +302,10 @@ function checkAnswer(questionIndex, selectedOptionIndex) {
         currentSession.userAnswers = {};
     }
     if (currentSession) {
-        currentSession.userAnswers[questionIndex] = selectedOptionIndex;
+        const selectedOption = question._originalOptions.find(opt => opt.text === question.options[selectedOptionIndex]);
+        if (selectedOption) {
+            currentSession.userAnswers[questionIndex] = selectedOption.originalIndex;
+        }
     }
 
     const isCorrect = selectedOptionIndex === question.correctAnswer;
@@ -433,6 +436,9 @@ function filterQuestionsByGroup(groupName) {
         } else if (groupName === 'without_images') {
             const hasImages = div.querySelector('img') !== null || div.innerHTML.includes('data:image');
             div.style.display = hasImages ? 'none' : 'block';
+        } else if (groupName === 'wrong') {
+            const index = parseInt(div.id.replace('question-', ''), 10);
+            div.style.display = currentSession.errors.includes(index) ? 'block' : 'none';
         } else {
             div.style.display = div.dataset.group === groupName ? 'block' : 'none';
         }
@@ -444,6 +450,8 @@ function filterQuestionsByGroup(groupName) {
         window.currentQuestions = window.allQuestions.filter(hasQuestionImages);
     } else if (groupName === 'without_images') {
         window.currentQuestions = window.allQuestions.filter(q => !hasQuestionImages(q));
+    } else if (groupName === 'wrong') {
+        window.currentQuestions = currentSession.errors.map(i => window.allQuestions[i]);
     } else {
         window.currentQuestions = window.allQuestions.filter(q => q.group === groupName);
     }
@@ -474,16 +482,16 @@ function displayGroupSelector() {
                 withoutImagesCount++;
             }
         });
-    } else {
-        withImagesCount = window.allQuestions.filter(hasQuestionImages).length;
-        withoutImagesCount = window.allQuestions.length - withImagesCount;
     }
 
     const totalQuestions = window.allQuestions.length;
+    const wrongCount = currentSession?.errors?.length || 0;
+
     groupSelect.innerHTML = `
         <option value="all">Все вопросы (${totalQuestions})</option>
         <option value="with_images">🖼️ С картинками (${withImagesCount})</option>
         <option value="without_images">📝 Без картинок (${withoutImagesCount})</option>
+        <option value="wrong">❌ Вопросы с ошибками (${wrongCount})</option>
     `;
 
     const groups = [...new Set(window.allQuestions.map(q => q.group))];
@@ -626,7 +634,7 @@ clearCacheButton.addEventListener("click", async function () {
         infoDiv.textContent = prevText;
         if (prevText == "Читаю кэш... ⏳" || prevText == "Читаю файл... ⏳" || prevText == "Ищу на сервере... ⏳") infoDiv.style.display = 'none';
     }, 1000);
-    
+
 });
 
 fromCacheButton.addEventListener("click", async function () {
@@ -742,9 +750,19 @@ function loadSession() {
         if (savedSession) {
             currentSession = JSON.parse(savedSession);
             if (currentSession.userAnswers && testData.length > 0) {
-                Object.entries(currentSession.userAnswers).forEach(([qIndex, optIndex]) => {
+                Object.entries(currentSession.userAnswers).forEach(([qIndex, originalOptIndex]) => {
                     const questionIndex = parseInt(qIndex);
-                    checkAnswer(questionIndex, optIndex);
+                    const question = testData[questionIndex];
+                    if (!question) return;
+
+                    // ищем где этот originalIndex оказался после перемешивания
+                    const restoredOptionIndex = question._originalOptions[originalOptIndex]
+                        ? question.options.findIndex(optText => optText === question._originalOptions[originalOptIndex].text)
+                        : -1;
+
+                    if (restoredOptionIndex !== -1) {
+                        checkAnswer(questionIndex, restoredOptionIndex);
+                    }
                 });
                 const correctP = document.getElementById('correctAmount');
                 const incorrectP = document.getElementById('incorrectAmount');
@@ -796,6 +814,7 @@ function logError(questionIndex) {
     if (!currentSession.errors.includes(questionIndex)) {
         currentSession.errors.push(questionIndex);
         currentSession.incorrectAnswers++;
+        displayGroupSelector();
     }
 }
 
@@ -866,7 +885,7 @@ wrongList.addEventListener('click', function (event) {
 });
 
 function scrollToNextVisibleQuestion(mode, currentElement, offset = 80) {
-    
+
     let next = currentElement;
     if (mode !== "cur") {
         if (isMobile) return;
