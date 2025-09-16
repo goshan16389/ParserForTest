@@ -25,6 +25,7 @@ async function processFile(content) {
     loadingDiv.style.display = 'block';
 
     if (content === undefined) {
+        resetTest();
         loadingDiv.textContent = 'Читаю файл... ⏳';
         if (!fileInputDocx.files.length) {
             errorDiv.textContent = 'Пожалуйста, выберите файл';
@@ -625,6 +626,7 @@ clearCacheButton.addEventListener("click", async function () {
         infoDiv.textContent = prevText;
         if (prevText == "Читаю кэш... ⏳" || prevText == "Читаю файл... ⏳" || prevText == "Ищу на сервере... ⏳") infoDiv.style.display = 'none';
     }, 1000);
+    
 });
 
 fromCacheButton.addEventListener("click", async function () {
@@ -636,6 +638,7 @@ fromCacheButton.addEventListener("click", async function () {
         setTimeout(() => {
             processFile(content);
         }, 1000);
+        resetTest();
     } else {
         console.log("Файл не найден.");
         infoDiv.style.display = 'block';
@@ -645,6 +648,7 @@ fromCacheButton.addEventListener("click", async function () {
 
 fromServer.addEventListener("click", async function () {
     processFile("web");
+    resetTest();
 });
 
 async function checkCache(storeName, key) {
