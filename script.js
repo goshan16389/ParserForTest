@@ -1,6 +1,7 @@
 let testData = [];
 let qAmount = 0;
 let htmlTest = '';
+const reallyAllQuestions = [];
 
 let selectedVersion = null;
 
@@ -15,10 +16,10 @@ const SESSION_KEY = 'test_session';
 const wrongList = document.querySelector('.wrong-list');
 
 async function processFile(content, version) {
-    
+
     const loadingDiv = document.getElementById('loading');
 
-    if(content === "web" && version == "my-file") {
+    if (content === "web" && version == "my-file") {
         loadingDiv.textContent = "Выберите файл из хранящихся на сервере! ⚠️"
         return;
     };
@@ -141,13 +142,15 @@ function parseQuestions(htmlContent) {
         if (tagName === 'p' && text && !text.match(/^[1-4][\.\)]\s/)) {
             if (currentQuestion && currentQuestion.options.length > 0) {
                 questions.push(currentQuestion);
+                reallyAllQuestions.push(currentQuestion);
             }
             currentQuestion = {
                 question: text,
                 options: [],
                 correctAnswer: null,
                 image: null,
-                group: currentGroup
+                group: currentGroup,
+                groupNumber: parseInt(currentGroup.match(/\d+(\.\d+)?/g))
             };
             const img = element.querySelector('img');
             if (img && img.src) {
@@ -250,6 +253,7 @@ function parseQuestions(htmlContent) {
 
     if (currentQuestion && currentQuestion.options.length > 0) {
         questions.push(currentQuestion);
+        reallyAllQuestions.push(currentQuestion);
     }
 
     return questions;
@@ -322,11 +326,11 @@ function checkAnswer(questionIndex, selectedOptionIndex, addResult) {
     const isCorrect = selectedOptionIndex === question.correctAnswer;
 
     if (isCorrect) {
-        if(addResult) logCorrectAnswer(questionIndex);
+        if (addResult) logCorrectAnswer(questionIndex);
         const question = document.getElementById(`question-${questionIndex}`);
         scrollToNextVisibleQuestion("next", question);
     } else {
-        if(addResult) logError(questionIndex);
+        if (addResult) logError(questionIndex);
     }
 
     if (isCorrect) {
@@ -338,7 +342,7 @@ function checkAnswer(questionIndex, selectedOptionIndex, addResult) {
             optionDiv.parentElement.classList.add('wascorrect');
             if (!questionNumber.classList.contains('red')) {
                 questionNumber.classList.add('green');
-                if(addResult) updateTotalResult("+");
+                if (addResult) updateTotalResult("+");
             }
         }
     } else {
@@ -361,7 +365,7 @@ function checkAnswer(questionIndex, selectedOptionIndex, addResult) {
         parent.classList.add('wasincorrect');
         if (!questionNumber.classList.contains('red')) {
             questionNumber.classList.add('red');
-            if(addResult) updateTotalResult("-");
+            if (addResult) updateTotalResult("-");
         }
     }
 
@@ -889,19 +893,19 @@ images.forEach(img => {
         const rect = img.getBoundingClientRect();
         if (img.classList.contains("version")) tooltip.textContent = "Выбрать ячейку кэша / файл для загрузки с сервера";
         else tooltip.textContent = img.alt;
-        
+
         // Использование fixed позиции
         tooltip.style.position = 'fixed';
         tooltip.style.left = (rect.right) + 'px';
         tooltip.style.top = (rect.bottom) + 'px';
         tooltip.style.opacity = '1';
-        
+
         // Очищаем предыдущий таймер, если был
         if (hideTimer) {
             clearTimeout(hideTimer);
             hideTimer = null;
         }
-        
+
         // На мобильных устройствах сразу запускаем таймер скрытия
         if (isMobile) {
             hideTimer = setTimeout(() => {
@@ -910,13 +914,13 @@ images.forEach(img => {
             }, 1500); // 1.5 секунды
         }
     });
-    
+
     img.addEventListener('mouseout', () => {
         // На мобильных устройствах не скрываем сразу (таймер уже работает)
         if (!isMobile) {
             tooltip.style.opacity = '0';
         }
-        
+
         // Очищаем таймер при уходе с элемента (опционально)
         if (isMobile && hideTimer) {
             clearTimeout(hideTimer);
@@ -1033,10 +1037,10 @@ versionList.addEventListener('mouseleave', () => {
 versions.forEach(version => {
     version.addEventListener('click', () => {
         const versionId = version.id;
-        
+
         // Применяем выбранную версию
         applyVersion(versionId);
-        
+
         // Скрываем список после выбора
         versionList.classList.add('hidden');
     });
@@ -1057,15 +1061,48 @@ function loadVersionFromStorage() {
 function applyVersion(versionId) {
     const version = document.getElementById(versionId);
     if (!version) return;
-    
+
     // Убираем активность у всех версий
     versions.forEach(v => v.classList.remove('active'));
-    
+
     // Добавляем активность выбранной версии
     version.classList.add('active');
-    
+
     // Сохраняем в хранилище
     saveVersionToStorage(versionId);
-    
+
     console.log('Применена версия:', versionId);
+}
+
+//Создать тест из 14 вопросов
+function createTest() {
+    if (!reallyAllQuestions || !Array.isArray(reallyAllQuestions)) {
+        console.error('window.allQuestions не найден или не является массивом');
+        return [];
+    }
+
+    const groups = {};
+
+    // Группируем вопросы по groupNumber
+    reallyAllQuestions.forEach(question => {
+        const groupNum = question.groupNumber;
+        if (!groups[groupNum]) {
+            groups[groupNum] = [];
+        }
+        groups[groupNum].push(question);
+    });
+
+    // Выбираем случайный вопрос из каждой группы
+    questions = Object.values(groups).map(group => {
+        const randomIndex = Math.floor(Math.random() * group.length);
+        return group[randomIndex];
+    });
+
+    qAmount = 0;
+    testData = questions;
+
+    resetTest();
+    displayTest(questions);
+
+
 }
