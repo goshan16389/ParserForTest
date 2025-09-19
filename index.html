@@ -148,6 +148,9 @@
             padding: 0 5px 0 5px;
             border-right: 2px solid #7c4ceb;
             box-sizing: border-box;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .file-button-text:hover {
@@ -162,6 +165,10 @@
             background: linear-gradient(135deg, #b1ebcf 0%, #4aa374 50%, #23cf73 100%);
         }
 
+        .file-button {
+            height: 30px;
+        }
+
         #toCache,
         #fromCache,
         #shuffle,
@@ -170,7 +177,7 @@
         .loading,
         .reset,
         #fromServer,
-        #clearCache {
+        #clearCache, #my-file {
             margin-left: 5px;
         }
 
@@ -340,7 +347,7 @@
         .mySelect {
             height: 30px;
             font-size: 20px;
-            border-radius: 5px;
+            border-radius: 5px; 
         }
 
         .scroll-to-top {
@@ -392,7 +399,98 @@
             color: #28a745;
         }
 
-        /* --- Адаптив для мобильных --- */
+        .ver-select {
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            /* скрываем выходящее за пределы */
+            transition: width 0.5s ease;
+            /* анимация изменения ширины */
+            white-space: nowrap;
+            /* запрещаем перенос строк */
+        }
+
+        /* Изначальная ширина - только под кнопку */
+        .ver-select {
+            width: 35px;
+            /* только под иконку */
+        }
+
+        /* При наведении - расширяемся под все версии */
+        .ver-select:hover {
+            width: 175px;
+            /* 30px кнопка + 5px отступ + (30px + 5px) * 4 версии */
+
+        }
+
+        #version-list {
+            display: flex;
+            gap: 5px;
+            margin-left: 5px;
+            opacity: 0;
+            /* изначально невидимо */
+            transition: opacity 0.2s ease;
+            /* плавное появление */
+        }
+
+        .ver-select:hover #version-list {
+            opacity: 1;
+            /* показываем при наведении */
+        }
+
+        .version {
+            width: 30px;
+            height: 30px;
+            background-color: #6b46c1;
+            padding: 2px;
+            box-sizing: border-box;
+            border-radius: 5px;
+            flex-shrink: 0;
+            /* запрещаем сжатие */
+        }
+
+        .version:hover {
+            background-color: #4ec987;
+            cursor: pointer;
+        }
+
+        .version p {
+            color: white;
+            font-size: 9px;
+            font-weight: bold;
+            line-height: 15px;
+            height: 15px;
+            margin: 0;
+            text-align: center;
+        }
+
+        .active {
+            background-color: #4ec987;
+        }
+
+        @media (max-width: 1450px) {
+            .mySelect {
+            max-width: 500px;   
+            
+        }
+        }
+
+        @media (max-width: 1225px) {
+            .mySelect {
+            max-width: 300px;   
+            
+        }
+        }
+
+        @media (max-width: 1000px) {
+            .mySelect {
+            max-width: 200px;   
+            
+        }
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 10px;
@@ -410,45 +508,33 @@
 
             .functions {
                 flex-wrap: wrap;
-                gap: 5px;
-                justify-content: flex-start;
+                row-gap: 5px;
+                justify-content: center;
                 /* Align left to avoid overflow */
                 max-width: 100%;
                 /* Ensure no overflow */
                 overflow-x: hidden;
             }
 
-            .functions img {
-                height: 28px;
-            }
-
-            .top-btn {
-                width: 28px;
-                height: 28px;
-            }
-
             .file-button-text {
                 font-size: 14px;
                 padding: 0 8px;
-                line-height: 28px;
                 max-width: 150px;
                 /* Limit width to prevent overflow */
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
+
+            }
+
+            .file-button {
+                margin-left: 5px;
             }
 
             .mySelect {
                 font-size: 16px;
-                height: 28px;
-                max-width: 150px;
-                /* Prevent select from overflowing */
             }
 
             .totalResult {
                 flex-wrap: nowrap;
                 height: auto;
-                padding: 2px;
                 max-width: 120px;
                 /* Limit width */
                 overflow: hidden;
@@ -537,6 +623,28 @@
                 transform: translateX(0);
                 /* Reset any rightward shift */
             }
+
+            .ver-select {
+                height: 30px;
+                display: inline-flex;
+                align-items: center;
+                position: relative;
+                overflow: hidden;
+                /* скрываем выходящее за пределы */
+                transition: width 0.5s ease;
+                /* анимация изменения ширины */
+                white-space: nowrap;
+                /* запрещаем перенос строк */
+            }
+
+            .ver-select {
+                width: 175px;
+
+            }
+
+            #version-list {
+                opacity: 1;
+            }
         }
     </style>
 
@@ -549,13 +657,39 @@
 
             <label class="file-button">
                 <input type="file" id="docxFile" accept=".docx" hidden>
-                <span class="file-button-text">📄 Выбрать DOCX файл</span>
+                <span class="file-button-text">📄 Выбрать .docx</span>
             </label>
 
             <img src="Assets/proceed.svg" id="processDocx" onclick="processFile()" class="top-btn"
                 alt="Загрузить вопросы из указанного файла">
 
-            <img src="Assets/server.svg" id="fromServer" class="top-btn" alt="Взять файл из сервера">
+            <div class="ver-select">
+                <img src="Assets/server.svg" id="fromServer" class="top-btn" alt="Взять файл из сервера">
+                <div id="version-list">
+                    <div class="version" id="prof-pl">
+                        <p>ПРОФ</p>
+                        <p>ПЛАТ</p>
+                    </div>
+                    <div class="version" id="prof-ut">
+                        <p>ПРОФ</p>
+                        <p>УТ</p>
+                    </div>
+                    <div class="version" id="spec-cons">
+                        <p>СПЕЦ</p>
+                        <p>КОНС</p>
+                    </div>
+                    <div class="version" id="spec-ut">
+                        <p>СПЕЦ</p>
+                        <p>УТ</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="version" id="my-file" alt="Привет">
+                <p>СВОЙ</p>
+                <p>ФАЙЛ</p>
+            </div>
 
             <img src="Assets/shuffle.svg" id="shuffle" class="top-btn" alt="Перемешать вопросы">
 

@@ -2,6 +2,8 @@ let testData = [];
 let qAmount = 0;
 let htmlTest = '';
 
+let selectedVersion = null;
+
 // Глобальные переменные
 let currentSession = null;
 
@@ -12,13 +14,19 @@ const SESSION_KEY = 'test_session';
 
 const wrongList = document.querySelector('.wrong-list');
 
-async function processFile(content) {
+async function processFile(content, version) {
+    
+    const loadingDiv = document.getElementById('loading');
+
+    if(content === "web" && version == "my-file") {
+        loadingDiv.textContent = "Выберите файл из хранящихся на сервере! ⚠️"
+        return;
+    };
     updateTotalResult("clear");
     qAmount = 0;
 
     const fileInputDocx = document.getElementById('docxFile');
     const errorDiv = document.getElementById('error');
-    const loadingDiv = document.getElementById('loading');
 
     errorDiv.textContent = '';
     errorDiv.classList.add("hidden");
@@ -59,12 +67,15 @@ async function processFile(content) {
     } else if (content === "web") {
         loadingDiv.textContent = 'Ищу на сервере... ⏳';
         try {
-            const response = await fetch('/docNormalized.docx');
+            const response = await fetch(`/${version}.docx`);
+            console.log(response);
             if (!response.ok) {
-                throw new Error('Файл не найден');
+                loadingDiv.textContent = 'Файл не найден! ⚠️';
+                return;
             }
             const arrayBuffer = await response.arrayBuffer();
             console.log('Файл загружен, размер:', arrayBuffer.byteLength, 'байт');
+            loadingDiv.textContent = 'Файл загружен! Читаю... ⏳';
             const result = await mammoth.convertToHtml(
                 { arrayBuffer },
                 {
@@ -618,7 +629,7 @@ const infoDiv = document.getElementById("loading");
 
 toCacheButton.addEventListener("click", async function () {
     await fileDB.init();
-    await fileDB.saveFile("questions.txt", htmlTest).then(() => console.log("Файл успешно сохранен."));
+    await fileDB.saveFile(selectedVersion, htmlTest).then(() => console.log("Файл успешно сохранен."));
     infoDiv.style.display = 'block';
     infoDiv.textContent = "Запись добавлена в кэш! ✅";
     setTimeout(() => {
@@ -629,7 +640,7 @@ toCacheButton.addEventListener("click", async function () {
 clearCacheButton.addEventListener("click", async function () {
     await fileDB.init();
     const prevText = infoDiv.textContent;
-    await fileDB.deleteFile("questions.txt");
+    await fileDB.deleteFile(selectedVersion);
     infoDiv.style.display = 'block';
     setTimeout(() => {
         infoDiv.textContent = prevText;
@@ -640,7 +651,7 @@ clearCacheButton.addEventListener("click", async function () {
 
 fromCacheButton.addEventListener("click", async function () {
     await fileDB.init();
-    const content = await fileDB.loadFile("questions.txt");
+    const content = await fileDB.loadFile(selectedVersion);
     if (content) {
         infoDiv.style.display = 'block';
         infoDiv.textContent = 'Читаю кэш... ⏳';
@@ -651,12 +662,12 @@ fromCacheButton.addEventListener("click", async function () {
     } else {
         console.log("Файл не найден.");
         infoDiv.style.display = 'block';
-        infoDiv.textContent = "Запись в кэше не найдена или пуста! ⚠️";
+        infoDiv.textContent = "Записи в кэше нет! ⚠️";
     }
 });
 
 fromServer.addEventListener("click", async function () {
-    processFile("web");
+    processFile("web", selectedVersion);
     resetTest();
 });
 
@@ -702,22 +713,22 @@ async function checkCache(storeName, key) {
     }
 }
 
-async function checkCacheOnLoad() {
+async function checkCacheOnLoad(version) {
     const loadingDiv = document.getElementById('loading');
     loadingDiv.textContent = 'Читаю кэш... ⏳';
     loadingDiv.style.display = 'block';
     try {
         console.log('🔄 Начинаем проверку кэша...');
-        const result = await checkCache('files', 'questions.txt');
+        const result = await checkCache('files', version);
         if (result.isValid) {
-            console.log('✅ Файл существует и не пустой, загружаю...');
+            console.log(`✅ Файл ${version} существует и не пустой, загружаю...`);
             await processFile(result.value); // Wait for processFile to complete
             loadSession(); // Call loadSession after processFile
         } else if (result.exists) {
-            console.log('⚠️ Файл существует, но пустой');
+            console.log(`⚠️ Файл ${version} существует, но пустой`);
             loadingDiv.textContent = 'Запись в кэше некорректна, загрузите файл с сервера или ПК 📁';
         } else {
-            console.log('❌ Файл не существует');
+            console.log(`❌ Файл ${version} не существует`);
             loadingDiv.textContent = 'Запись в кэше отсутствует, загрузите файл с сервера или ПК 📁';
         }
     } catch (error) {
@@ -827,7 +838,17 @@ function logCorrectAnswer(questionIndex) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    checkCacheOnLoad();
+    const savedVersion = loadVersionFromStorage();
+
+    if (savedVersion) {
+        // Восстанавливаем сохраненную версию
+        applyVersion(savedVersion);
+        selectedVersion = savedVersion;
+    } else {
+        applyVersion('prof-pl'); // Раскомментируйте если нужно
+    }
+
+    checkCacheOnLoad(selectedVersion);
     initSessions();
 
 
@@ -857,18 +878,51 @@ document.getElementById('shuffle').addEventListener('click', function () {
     }
 });
 
-const tooltip = document.getElementById(`global-tooltip`);
-const images = document.querySelectorAll(`.top-btn`);
+const tooltip = document.getElementById('global-tooltip');
+const images = document.querySelectorAll('.top-btn, .version');
+
+// Таймер для автоматического скрытия
+let hideTimer = null;
+
 images.forEach(img => {
     img.addEventListener('mouseover', (event) => {
         const rect = img.getBoundingClientRect();
-        tooltip.textContent = img.alt;
-        tooltip.style.left = (rect.right + window.scrollX) + 'px';
-        tooltip.style.top = (rect.bottom + window.scrollY) + 'px';
+        if (img.classList.contains("version")) tooltip.textContent = "Выбрать ячейку кэша / файл для загрузки с сервера";
+        else tooltip.textContent = img.alt;
+        
+        // Использование fixed позиции
+        tooltip.style.position = 'fixed';
+        tooltip.style.left = (rect.right) + 'px';
+        tooltip.style.top = (rect.bottom) + 'px';
         tooltip.style.opacity = '1';
+        
+        // Очищаем предыдущий таймер, если был
+        if (hideTimer) {
+            clearTimeout(hideTimer);
+            hideTimer = null;
+        }
+        
+        // На мобильных устройствах сразу запускаем таймер скрытия
+        if (isMobile) {
+            hideTimer = setTimeout(() => {
+                tooltip.style.opacity = '0';
+                hideTimer = null;
+            }, 1500); // 1.5 секунды
+        }
     });
+    
     img.addEventListener('mouseout', () => {
-        tooltip.style.opacity = '0';
+        // На мобильных устройствах не скрываем сразу (таймер уже работает)
+        if (!isMobile) {
+            tooltip.style.opacity = '0';
+        }
+        
+        // Очищаем таймер при уходе с элемента (опционально)
+        if (isMobile && hideTimer) {
+            clearTimeout(hideTimer);
+            hideTimer = null;
+            tooltip.style.opacity = '0';
+        }
     });
 });
 
@@ -953,3 +1007,65 @@ document.addEventListener('keydown', function (event) {
         }
     }
 });
+
+const versionList = document.getElementById('version-list');
+const versions = document.querySelectorAll('.version');
+
+// Обработчик наведения на иконку
+fromServer.addEventListener('mouseenter', () => {
+    versionList.classList.remove('hidden');
+});
+
+// Обработчик ухода с области
+fromServer.addEventListener('mouseleave', (e) => {
+    // Проверяем, не перешел ли курсор на список версий
+    if (!versionList.matches(':hover')) {
+        versionList.classList.add('hidden');
+    }
+});
+
+// Обработчик ухода со списка версий
+versionList.addEventListener('mouseleave', () => {
+    versionList.classList.add('hidden');
+});
+
+// Обработчик клика по варианту версии
+versions.forEach(version => {
+    version.addEventListener('click', () => {
+        const versionId = version.id;
+        
+        // Применяем выбранную версию
+        applyVersion(versionId);
+        
+        // Скрываем список после выбора
+        versionList.classList.add('hidden');
+    });
+});
+
+// Функция для сохранения версии в localStorage
+function saveVersionToStorage(versionId) {
+    localStorage.setItem('selectedVersion', versionId);
+    selectedVersion = versionId;
+}
+
+// Функция для загрузки версии из localStorage
+function loadVersionFromStorage() {
+    return localStorage.getItem('selectedVersion');
+}
+
+// Функция применения выбранной версии
+function applyVersion(versionId) {
+    const version = document.getElementById(versionId);
+    if (!version) return;
+    
+    // Убираем активность у всех версий
+    versions.forEach(v => v.classList.remove('active'));
+    
+    // Добавляем активность выбранной версии
+    version.classList.add('active');
+    
+    // Сохраняем в хранилище
+    saveVersionToStorage(versionId);
+    
+    console.log('Применена версия:', versionId);
+}
