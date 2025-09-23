@@ -171,7 +171,8 @@ function parseQuestions(htmlContent) {
                     if (multiRes === "all") {
                         multiVals = ["all"];
                     } else {
-                        multiVals = multiRes.match(/\d+/g);
+                        const multiValsRaw = multiRes.match(/\d+/g) || [];
+                        multiVals = multiValsRaw.flatMap(val => val.split(''));
                     }
                     optionText = optionText.split('multi')[0].trim();
                 }
@@ -214,24 +215,34 @@ function parseQuestions(htmlContent) {
 
             finalOptions.forEach((option, finalIndex) => {
                 if (option.multiVals != null && option.multiVals[0] !== "all") {
-                    const valsArr = option.multiVals[0].split("");
+                    const valsArr = option.multiVals.map(Number).filter(n => !isNaN(n));
                     const newNumbers = [];
+
                     valsArr.forEach(element => {
-                        const originalElement = options[parseInt(element) - 1];
-                        if (originalElement) {
-                            const newPosition = finalOptions.findIndex(opt => opt === originalElement);
-                            newNumbers.push(newPosition + 1);
+                        const origIndex = element - 1;
+                        const originalOpt = options[origIndex];
+                        if (originalOpt) {
+                            const newPosition = finalOptions.findIndex(opt => opt === originalOpt);
+                            if (newPosition !== -1) {
+                                newNumbers.push(newPosition + 1);
+                            }
                         }
                     });
+
                     newNumbers.sort((a, b) => a - b);
-                    let numbersInText = option.text.match(/\d+/g) || [];
+
+                    let newText = option.text;
+                    const numbersInText = option.text.match(/\d+/g) || [];
+
                     if (numbersInText.length === newNumbers.length) {
-                        let newText = option.text;
-                        numbersInText.forEach((num, index) => {
-                            newText = newText.replace(num, newNumbers[index].toString());
-                        });
-                        option.text = newText;
+                        let index = 0;
+                        newText = newText.replace(/\d+/g, () => newNumbers[index++].toString());
+                    } else {
+                        // Fallback: Rebuild the text assuming numbers are at the end
+                        const prefix = newText.replace(/[\d\s,.-]*$/, '').trim();
+                        newText = `${prefix} ${newNumbers.join(', ')}.`;
                     }
+                    option.text = newText;
                 }
                 currentQuestion.options.push(option.text);
                 if (option.isCorrect) {
@@ -424,6 +435,7 @@ function resetTest() {
     localStorage.removeItem(SESSION_KEY); // Удаляем сохраненную сессию
     currentSession = null; // Очищаем текущую сессию
     startNewSession(); // Начинаем новую сессию
+    displayGroupSelector();
     scrollToTopBtn.click();
 }
 
