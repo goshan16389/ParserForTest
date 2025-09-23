@@ -1097,9 +1097,15 @@ function createTest() {
         const randomIndex = Math.floor(Math.random() * group.length);
         return group[randomIndex];
     });
+    
+    const shuffler = document.getElementById('shuffle');
+    if (shuffler.classList.contains('loaded')) {
+        questions = shuffleArray(questions);
+    }
 
     qAmount = 0;
     testData = questions;
+
 
     resetTest();
     displayTest(questions);
