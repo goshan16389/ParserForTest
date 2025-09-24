@@ -114,12 +114,14 @@
         }
 
         #processDocx:hover,
-        #shuffle:hover {
+        #shuffle:hover,
+        #beta:hover {
             background-color: #a38adf;
         }
 
         #processDocx.loaded,
         #shuffle.loaded,
+        #beta.loaded,
         #toCache:hover,
         #fromCache:hover,
         .reset,
@@ -130,6 +132,7 @@
 
         #processDocx.loaded:hover,
         #shuffle.loaded:hover,
+        #beta.loaded.hover,
         .reset:hover {
             background-color: #23cf73;
         }
@@ -177,7 +180,9 @@
         .loading,
         .reset,
         #fromServer,
-        #clearCache, #my-file {
+        #clearCache,
+        #my-file, 
+        #beta {
             margin-left: 5px;
         }
 
@@ -347,7 +352,7 @@
         .mySelect {
             height: 30px;
             font-size: 20px;
-            border-radius: 5px; 
+            border-radius: 5px;
         }
 
         .scroll-to-top {
@@ -440,7 +445,7 @@
             /* показываем при наведении */
         }
 
-        .version {
+        .version, .beta {
             width: 30px;
             height: 30px;
             background-color: #6b46c1;
@@ -456,7 +461,7 @@
             cursor: pointer;
         }
 
-        .version p {
+        .version p, .beta p {
             color: white;
             font-size: 9px;
             font-weight: bold;
@@ -472,23 +477,23 @@
 
         @media (max-width: 1450px) {
             .mySelect {
-            max-width: 500px;   
-            
-        }
+                max-width: 500px;
+
+            }
         }
 
         @media (max-width: 1225px) {
             .mySelect {
-            max-width: 300px;   
-            
-        }
+                max-width: 300px;
+
+            }
         }
 
         @media (max-width: 1000px) {
             .mySelect {
-            max-width: 200px;   
-            
-        }
+                max-width: 200px;
+
+            }
         }
 
         @media (max-width: 768px) {
@@ -686,7 +691,7 @@
 
             </div>
 
-            <div class="version" id="my-file" alt="Привет">
+            <div class="version" id="my-file">
                 <p>СВОЙ</p>
                 <p>ФАЙЛ</p>
             </div>
@@ -712,8 +717,10 @@
             </div>
             <img src="Assets/reset.svg" onclick="resetTest()" class="top-btn reset" alt="Начать заново">
             <img src="Assets/test.svg" onclick="createTest()" class="top-btn reset" alt="Создать тест">
+            <div class="beta top-btn" id="beta">
+                <p>БЕТА</p>
+            </div>
 
-            
         </div>
         <div class="wrong-list">
 

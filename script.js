@@ -3,6 +3,8 @@ let qAmount = 0;
 let htmlTest = '';
 const reallyAllQuestions = [];
 
+betaMode = false;
+
 let selectedVersion = null;
 
 // Глобальные переменные
@@ -368,10 +370,23 @@ function checkAnswer(questionIndex, selectedOptionIndex, addResult) {
             optionDiv.classList.add('incorrect');
         } else if (!optionDiv.classList.contains('incorrect')) {
             optionDiv.classList.add('incorrect');
-            if (!document.getElementById(`wrong-${questionIndex}`)) {
-                const questionNumber = question.question.split(' ')[0];
-                wrongList.innerHTML += `<span id="wrong-${questionIndex}" class="wrong-q">${questionNumber}</span>`;
+
+            if (!betaMode) {
+                if (!document.getElementById(`wrong-${questionIndex}`)) {
+                    const questionNumber = question.question.split(' ')[0];
+                    wrongList.innerHTML += `<span id="wrong-${questionIndex}" class="wrong-q">${questionNumber}</span>`;
+                }
+            } else {
+                // ИСПРАВЛЕННАЯ ЧАСТЬ - проверка по номеру вопроса
+                const questionNumberText = question.question.split(' ')[0]; // Получаем "12.23"
+                const questionId = questionNumberText.replace('.', '_'); // Преобразуем в "12_23"
+
+                // Проверяем существование элемента по новому id
+                if (!document.getElementById(`wrong-${questionId}`)) {
+                    wrongList.innerHTML += `<span id="wrong-${questionId}" class="wrong-q">${questionNumberText}</span>`;
+                }
             }
+
         }
         parent.classList.add('wasincorrect');
         if (!questionNumber.classList.contains('red')) {
@@ -413,28 +428,33 @@ function updateTotalResult(operation) {
 }
 
 // Сброс теста
-function resetTest() {
-    document.querySelectorAll('input[type="radio"]').forEach(radio => {
-        radio.checked = false;
-    });
-    document.querySelectorAll('.option').forEach(option => {
-        option.classList.remove('correct', 'incorrect');
-    });
-    document.querySelectorAll('.wascorrect').forEach(el => {
-        el.classList.remove("wascorrect");
-    });
-    document.querySelectorAll('.wasincorrect').forEach(el => {
-        el.classList.remove("wasincorrect");
-    });
-    document.querySelectorAll('.question-number').forEach(el => {
-        el.classList.remove("green");
-        el.classList.remove("red");
-    });
-    document.querySelector('.wrong-list').innerHTML = '';
-    updateTotalResult("clear");
-    localStorage.removeItem(SESSION_KEY); // Удаляем сохраненную сессию
-    currentSession = null; // Очищаем текущую сессию
-    startNewSession(); // Начинаем новую сессию
+function resetTest(mode) {
+    if (mode) {
+
+    } else {
+        document.querySelectorAll('input[type="radio"]').forEach(radio => {
+            radio.checked = false;
+        });
+        document.querySelectorAll('.option').forEach(option => {
+            option.classList.remove('correct', 'incorrect');
+        });
+        document.querySelectorAll('.wascorrect').forEach(el => {
+            el.classList.remove("wascorrect");
+        });
+        document.querySelectorAll('.wasincorrect').forEach(el => {
+            el.classList.remove("wasincorrect");
+        });
+        document.querySelectorAll('.question-number').forEach(el => {
+            el.classList.remove("green");
+            el.classList.remove("red");
+        });
+        document.querySelector('.wrong-list').innerHTML = '';
+        updateTotalResult("clear");
+        localStorage.removeItem(SESSION_KEY); // Удаляем сохраненную сессию
+        currentSession = null; // Очищаем текущую сессию
+        startNewSession(); // Начинаем новую сессию
+    }
+
     displayGroupSelector();
     scrollToTopBtn.click();
 }
@@ -465,8 +485,21 @@ function filterQuestionsByGroup(groupName) {
             const hasImages = div.querySelector('img') !== null || div.innerHTML.includes('data:image');
             div.style.display = hasImages ? 'none' : 'block';
         } else if (groupName === 'wrong') {
-            const index = parseInt(div.id.replace('question-', ''), 10);
-            div.style.display = currentSession.errors.includes(index) ? 'block' : 'none';
+            let isWrong = false;
+            
+            if (betaMode) {
+                // Новый формат: ищем по номеру вопроса
+                const questionText = div.querySelector('.question-text').textContent;
+                const questionNumber = questionText.split(' ')[0]; // "1.49"
+                const questionId = questionNumber.replace('.', '_'); // "1_49"
+                isWrong = currentSession.errors.includes(questionId);
+            } else {
+                // Старый формат: по индексу
+                const index = parseInt(div.id.replace('question-', ''), 10);
+                isWrong = currentSession.errors.includes(index);
+            }
+            
+            div.style.display = isWrong ? 'block' : 'none';
         } else {
             div.style.display = div.dataset.group === groupName ? 'block' : 'none';
         }
@@ -479,7 +512,16 @@ function filterQuestionsByGroup(groupName) {
     } else if (groupName === 'without_images') {
         window.currentQuestions = window.allQuestions.filter(q => !hasQuestionImages(q));
     } else if (groupName === 'wrong') {
-        window.currentQuestions = currentSession.errors.map(i => window.allQuestions[i]);
+        if (betaMode) {
+            // Новый формат: ищем вопросы по идентификаторам
+            window.currentQuestions = currentSession.errors.map(identifier => {
+                const questionNumber = identifier.replace('_', '.'); // "1.49"
+                return window.allQuestions.find(q => q.question.startsWith(questionNumber + ' '));
+            }).filter(q => q !== undefined); // фильтруем undefined
+        } else {
+            // Старый формат: по индексам
+            window.currentQuestions = currentSession.errors.map(i => window.allQuestions[i]);
+        }
     } else {
         window.currentQuestions = window.allQuestions.filter(q => q.group === groupName);
     }
@@ -778,32 +820,75 @@ function loadSession() {
         if (savedSession) {
             currentSession = JSON.parse(savedSession);
             if (currentSession.userAnswers && testData.length > 0) {
-                Object.entries(currentSession.userAnswers).forEach(([qIndex, originalOptIndex]) => {
-                    const questionIndex = parseInt(qIndex);
-                    const question = testData[questionIndex];
-                    if (!question) return;
 
-                    // ищем где этот originalIndex оказался после перемешивания
-                    const restoredOptionIndex = question._originalOptions[originalOptIndex]
-                        ? question.options.findIndex(optText => optText === question._originalOptions[originalOptIndex].text)
-                        : -1;
+                if (!betaMode) {
+                    // Восстанавливаем ответы пользователя
+                    Object.entries(currentSession.userAnswers).forEach(([identifier, originalOptIndex]) => {
+                        let questionIndex;
 
-                    if (restoredOptionIndex !== -1) {
-                        checkAnswer(questionIndex, restoredOptionIndex, false);
-                    }
-                });
-                const correctP = document.getElementById('correctAmount');
-                const incorrectP = document.getElementById('incorrectAmount');
-                const remainsP = document.getElementById('remainsAmount');
-                correctP.textContent = currentSession.correctAnswers;
-                incorrectP.textContent = currentSession.incorrectAnswers;
-                remainsP.textContent = currentSession.totalQuestions - currentSession.correctAnswers - currentSession.incorrectAnswers;
+                        if (betaMode && typeof identifier === 'string' && identifier.includes('_')) {
+                            // Новый формат: identifier = "1_49"
+                            const questionNumberText = identifier.replace('_', '.'); // "1.49"
+                            // Ищем индекс вопроса по номеру
+                            questionIndex = testData.findIndex(q => q.question.startsWith(questionNumberText + ' '));
+                        } else {
+                            // Старый формат: identifier = индекс числа
+                            questionIndex = parseInt(identifier);
+                        }
+
+                        if (questionIndex === -1 || questionIndex >= testData.length) return;
+
+                        const question = testData[questionIndex];
+                        if (!question) return;
+
+                        // ищем где этот originalIndex оказался после перемешивания
+                        const restoredOptionIndex = question._originalOptions[originalOptIndex]
+                            ? question.options.findIndex(optText => optText === question._originalOptions[originalOptIndex].text)
+                            : -1;
+
+                        if (restoredOptionIndex !== -1) {
+                            checkAnswer(questionIndex, restoredOptionIndex, false);
+                        }
+                    });
+
+                    // Обновляем счетчики
+                    const correctP = document.getElementById('correctAmount');
+                    const incorrectP = document.getElementById('incorrectAmount');
+                    const remainsP = document.getElementById('remainsAmount');
+                    correctP.textContent = currentSession.correctAnswers;
+                    incorrectP.textContent = currentSession.incorrectAnswers;
+                    remainsP.textContent = currentSession.totalQuestions - currentSession.correctAnswers - currentSession.incorrectAnswers;
+
+                }
+
+
+                // Восстанавливаем список ошибок
                 wrongList.innerHTML = '';
-                currentSession.errors.forEach(qIndex => {
-                    const question = testData[qIndex];
+                currentSession.errors.forEach(identifier => {
+                    let question = null;
+                    let questionNumber = '';
+                    let displayId = '';
+
+                    if (betaMode && typeof identifier === 'string' && identifier.includes('_')) {
+                        // Новый формат: identifier = "1_49"
+                        const questionNumberText = identifier.replace('_', '.'); // "1.49"
+                        questionNumber = questionNumberText;
+                        displayId = identifier;
+
+                        // Ищем вопрос по номеру в тексте
+                        question = testData.find(q => q.question.startsWith(questionNumberText + ' '));
+                    } else {
+                        // Старый формат: identifier = индекс числа
+                        const questionIndex = parseInt(identifier);
+                        question = testData[questionIndex];
+                        if (question) {
+                            questionNumber = question.question.split(' ')[0];
+                            displayId = questionIndex;
+                        }
+                    }
+
                     if (question) {
-                        const questionNumber = question.question.split(' ')[0];
-                        wrongList.innerHTML += `<span id="wrong-${qIndex}" class="wrong-q">${questionNumber}</span>`;
+                        wrongList.innerHTML += `<span id="wrong-${displayId}" class="wrong-q">${questionNumber}</span>`;
                     }
                 });
             }
@@ -839,8 +924,20 @@ function endSession() {
 
 function logError(questionIndex) {
     if (!currentSession) return;
-    if (!currentSession.errors.includes(questionIndex)) {
-        currentSession.errors.push(questionIndex);
+
+    let identifier;
+    if (betaMode) {
+        // Новый формат: получаем "Тема_номер" из текста вопроса
+        const question = testData[questionIndex];
+        const questionNumber = question.question.split(' ')[0]; // "1.6"
+        identifier = questionNumber.replace('.', '_'); // "1_6"
+    } else {
+        // Старый формат: используем questionIndex
+        identifier = questionIndex;
+    }
+
+    if (!currentSession.errors.includes(identifier)) {
+        currentSession.errors.push(identifier);
         currentSession.incorrectAnswers++;
         displayGroupSelector();
     }
@@ -848,12 +945,36 @@ function logError(questionIndex) {
 
 function logCorrectAnswer(questionIndex) {
     if (!currentSession) return;
-    if (!currentSession.errors.includes(questionIndex)) {
+
+    let identifier;
+    if (betaMode) {
+        // Новый формат: получаем "Тема_номер" из текста вопроса
+        const question = testData[questionIndex];
+        const questionNumber = question.question.split(' ')[0]; // "1.6"
+        identifier = questionNumber.replace('.', '_'); // "1_6"
+    } else {
+        // Старый формат: используем questionIndex
+        identifier = questionIndex;
+    }
+
+    if (!currentSession.errors.includes(identifier)) {
         currentSession.correctAnswers++;
     }
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+    loadBetaMode(); // Загружаем сохраненное значение
+
+    // Устанавливаем класс кнопки в соответствии с загруженным значением
+    const betaButton = document.getElementById('beta');
+    if (betaButton) {
+        if (betaMode) {
+            betaButton.classList.add('loaded');
+        } else {
+            betaButton.classList.remove('loaded');
+        }
+    }
+
     const savedVersion = loadVersionFromStorage();
 
     if (savedVersion) {
@@ -894,6 +1015,18 @@ document.getElementById('shuffle').addEventListener('click', function () {
     }
 });
 
+// Обработчик клика по кнопке beta
+document.getElementById('beta').addEventListener('click', function () {
+    if (this.classList.contains('loaded')) {
+        this.classList.remove('loaded');
+        betaMode = false;
+    } else {
+        this.classList.add('loaded');
+        betaMode = true;
+    }
+    saveBetaMode(); // Сохраняем выбор пользователя
+});
+
 const tooltip = document.getElementById('global-tooltip');
 const images = document.querySelectorAll('.top-btn, .version');
 
@@ -904,6 +1037,7 @@ images.forEach(img => {
     img.addEventListener('mouseover', (event) => {
         const rect = img.getBoundingClientRect();
         if (img.classList.contains("version")) tooltip.textContent = "Выбрать ячейку кэша / файл для загрузки с сервера";
+        else if (img.classList.contains("beta")) tooltip.textContent = "Включить нестабильные функции";
         else tooltip.textContent = img.alt;
 
         // Использование fixed позиции
@@ -949,9 +1083,32 @@ wrongList.addEventListener('wheel', (e) => {
 
 wrongList.addEventListener('click', function (event) {
     if (event.target.classList.contains('wrong-q')) {
-        const number = event.target.id.split('-')[1];
-        const question = document.getElementById(`question-${number}`);
-        scrollToNextVisibleQuestion("cur", question);
+        const idPart = event.target.id.split('-')[1]; // Получаем часть id после "wrong-"
+
+        let targetQuestion = null;
+
+        // Проверяем формат id: если содержит "_" - это новый формат, иначе - старый
+        if (idPart.includes('_')) {
+            // Новый формат: wrong-1_6 -> ищем вопрос с текстом "1.6"
+            const questionNumber = idPart.replace('_', '.'); // Преобразуем в "1.6"
+
+            // Ищем вопрос по номеру в тексте вопроса
+            const questions = document.querySelectorAll('.question');
+            for (const question of questions) {
+                const questionText = question.querySelector('.question-text');
+                if (questionText && questionText.textContent.includes(questionNumber + ' ')) {
+                    targetQuestion = question;
+                    break;
+                }
+            }
+        } else {
+            // Старый формат: wrong-5 -> ищем question-5
+            targetQuestion = document.getElementById(`question-${idPart}`);
+        }
+
+        if (targetQuestion) {
+            scrollToNextVisibleQuestion("cur", targetQuestion);
+        }
     }
 });
 
@@ -1109,7 +1266,7 @@ function createTest() {
         const randomIndex = Math.floor(Math.random() * group.length);
         return group[randomIndex];
     });
-    
+
     const shuffler = document.getElementById('shuffle');
     if (shuffler.classList.contains('loaded')) {
         questions = shuffleArray(questions);
@@ -1119,8 +1276,27 @@ function createTest() {
     testData = questions;
 
 
-    resetTest();
+    if (betaMode) resetTest(true);
+    else resetTest();
     displayTest(questions);
 
 
+}
+
+// Функция сохранения betaMode в localStorage
+function saveBetaMode() {
+    localStorage.setItem('betaMode', JSON.stringify(betaMode));
+}
+
+// Функция загрузки betaMode из localStorage
+function loadBetaMode() {
+    try {
+        const savedBetaMode = localStorage.getItem('betaMode');
+        if (savedBetaMode !== null) {
+            betaMode = JSON.parse(savedBetaMode);
+        }
+    } catch (error) {
+        console.warn('Не удалось загрузить betaMode:', error);
+        betaMode = false; // значение по умолчанию
+    }
 }
