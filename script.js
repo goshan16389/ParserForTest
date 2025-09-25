@@ -16,6 +16,7 @@ const isMobile = /Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAg
 const SESSION_KEY = 'test_session';
 
 const wrongList = document.querySelector('.wrong-list');
+const warnList = document.querySelector('.warn-list');
 
 async function processFile(content, version) {
 
@@ -291,6 +292,7 @@ function displayTest(questions) {
             <div class="question-header">
                 <div class="question-number">${qIndex + 1}</div>
                 <div class="question-text">${q.question}</div>
+                <p class="question-warn">!</p>
             </div>
         `;
         if (q.image) {
@@ -449,6 +451,10 @@ function resetTest(mode) {
             el.classList.remove("red");
         });
         document.querySelector('.wrong-list').innerHTML = '';
+        document.querySelector('.warn-list').innerHTML = '';
+        document.querySelectorAll('.question-warn.active').forEach(element => {
+            element.classList.remove('active');
+        });
         updateTotalResult("clear");
         localStorage.removeItem(SESSION_KEY); // Удаляем сохраненную сессию
         currentSession = null; // Очищаем текущую сессию
@@ -486,7 +492,7 @@ function filterQuestionsByGroup(groupName) {
             div.style.display = hasImages ? 'none' : 'block';
         } else if (groupName === 'wrong') {
             let isWrong = false;
-            
+
             if (betaMode) {
                 // Новый формат: ищем по номеру вопроса
                 const questionText = div.querySelector('.question-text').textContent;
@@ -498,8 +504,24 @@ function filterQuestionsByGroup(groupName) {
                 const index = parseInt(div.id.replace('question-', ''), 10);
                 isWrong = currentSession.errors.includes(index);
             }
-            
+
             div.style.display = isWrong ? 'block' : 'none';
+        } else if (groupName === 'warn') {
+            let isWarn = false;
+
+            if (betaMode) {
+                // Новый формат: ищем по номеру вопроса
+                const questionText = div.querySelector('.question-text').textContent;
+                const questionNumber = questionText.split(' ')[0]; // "1.49"
+                const questionId = questionNumber.replace('.', '_'); // "1_49"
+                isWarn = currentSession.warns.includes(questionId);
+            } else {
+                // Старый формат: по индексу
+                const index = parseInt(div.id.replace('question-', ''), 10);
+                isWarn = currentSession.warns.includes(index);
+            }
+
+            div.style.display = isWarn ? 'block' : 'none';
         } else {
             div.style.display = div.dataset.group === groupName ? 'block' : 'none';
         }
@@ -521,6 +543,17 @@ function filterQuestionsByGroup(groupName) {
         } else {
             // Старый формат: по индексам
             window.currentQuestions = currentSession.errors.map(i => window.allQuestions[i]);
+        }
+    } else if (groupName === 'warn') {
+        if (betaMode) {
+            // Новый формат: ищем вопросы по идентификаторам
+            window.currentQuestions = currentSession.warns.map(identifier => {
+                const questionNumber = identifier.replace('_', '.'); // "1.49"
+                return window.allQuestions.find(q => q.question.startsWith(questionNumber + ' '));
+            }).filter(q => q !== undefined); // фильтруем undefined
+        } else {
+            // Старый формат: по индексам
+            window.currentQuestions = currentSession.warns.map(i => window.allQuestions[i]);
         }
     } else {
         window.currentQuestions = window.allQuestions.filter(q => q.group === groupName);
@@ -556,12 +589,14 @@ function displayGroupSelector() {
 
     const totalQuestions = window.allQuestions.length;
     const wrongCount = currentSession?.errors?.length || 0;
+    const warnCount = currentSession?.warns?.length || 0;
 
     groupSelect.innerHTML = `
         <option value="all">Все вопросы (${totalQuestions})</option>
         <option value="with_images">🖼️ С картинками (${withImagesCount})</option>
         <option value="without_images">📝 Без картинок (${withoutImagesCount})</option>
         <option value="wrong">❌ Вопросы с ошибками (${wrongCount})</option>
+        <option value="warn">Отмеченные вопросы (${warnCount})</option>
     `;
 
     const groups = [...new Set(window.allQuestions.map(q => q.group))];
@@ -819,7 +854,7 @@ function loadSession() {
         const savedSession = localStorage.getItem(SESSION_KEY);
         if (savedSession) {
             currentSession = JSON.parse(savedSession);
-            if (currentSession.userAnswers && testData.length > 0) {
+            if ((currentSession.userAnswers) && testData.length > 0) {
 
                 if (!betaMode) {
                     // Восстанавливаем ответы пользователя
@@ -864,6 +899,7 @@ function loadSession() {
 
                 // Восстанавливаем список ошибок
                 wrongList.innerHTML = '';
+                warnList.innerHTML = ''
                 currentSession.errors.forEach(identifier => {
                     let question = null;
                     let questionNumber = '';
@@ -891,6 +927,37 @@ function loadSession() {
                         wrongList.innerHTML += `<span id="wrong-${displayId}" class="wrong-q">${questionNumber}</span>`;
                     }
                 });
+
+                currentSession.warns.forEach(identifier => {
+                    let question = null;
+                    let questionNumber = '';
+                    let displayId = '';
+
+                    if (betaMode && typeof identifier === 'string' && identifier.includes('_')) {
+                        // Новый формат: identifier = "1_49"
+                        const questionNumberText = identifier.replace('_', '.'); // "1.49"
+                        questionNumber = questionNumberText;
+                        displayId = identifier;
+
+                        // Ищем вопрос по номеру в тексте
+                        question = testData.find(q => q.question.startsWith(questionNumberText + ' '));
+                    } else {
+                        // Старый формат: identifier = индекс числа
+                        const questionIndex = parseInt(identifier);
+                        question = testData[questionIndex];
+                        if (question) {
+                            questionNumber = question.question.split(' ')[0];
+                            displayId = questionIndex;
+                            img = document.getElementById(`question-${questionIndex}`).querySelector('.question-warn');
+                            img.classList.add('active');
+                        }
+                    }
+
+                    if (question) {
+                        warnList.innerHTML += `<span id="warn-${displayId}" class="warn-q">${questionNumber}</span>`;
+                        
+                    }
+                });
             }
         }
     } catch (error) {
@@ -909,6 +976,7 @@ function startNewSession() {
         startTime: new Date().toLocaleString(),
         endTime: null,
         errors: [],
+        warns: [],
         userAnswers: {},
         totalQuestions: qAmount,
         correctAnswers: 0,
@@ -942,6 +1010,73 @@ function logError(questionIndex) {
         displayGroupSelector();
     }
 }
+
+function logWarn(questionIndex, img) {
+    if (!currentSession) return;
+
+    // Новый формат: получаем "Тема_номер" из текста вопроса
+    const question = testData[questionIndex];
+    const questionNumber = question.question.split(' ')[0]; // "1.6"
+
+    let identifier;
+    if (betaMode) {
+
+
+        identifier = questionNumber.replace('.', '_'); // "1_6"
+    } else {
+        // Старый формат: используем questionIndex
+        identifier = parseInt(questionIndex);
+    }
+
+    if (!currentSession.warns.includes(identifier)) {
+        currentSession.warns.push(identifier);
+
+        img.classList.add('active')
+
+        if (!betaMode) {
+            if (!document.getElementById(`warn-${questionIndex}`)) {
+                const questionNumber = question.question.split(' ')[0];
+                warnList.innerHTML += `<span id="warn-${questionIndex}" class="warn-q">${questionNumber}</span>`;
+            }
+        } else {
+            const questionNumberText = question.question.split(' ')[0]; // Получаем "12.23"
+            const questionId = questionNumberText.replace('.', '_'); // Преобразуем в "12_23"
+
+            // Проверяем существование элемента по новому id
+            if (!document.getElementById(`warn-${questionId}`)) {
+                warnList.innerHTML += `<span id="warn-${questionId}" class="warn-q">${questionNumberText}</span>`;
+            }
+        }
+    } else {
+        currentSession.warns = currentSession.warns.filter(item => item !== identifier);
+        img.classList.remove('active')
+
+        if (!betaMode) {
+            const warnElement = document.getElementById(`warn-${questionIndex}`);
+            if (warnElement) {
+                warnElement.remove();
+            }
+        } else {
+            const questionNumberText = question.question.split(' ')[0]; // Получаем "12.23"
+            const questionId = questionNumberText.replace('.', '_'); // Преобразуем в "12_23"
+            const warnElement = document.getElementById(`warn-${questionId}`);
+            if (warnElement) {
+                warnElement.remove();
+            }
+        }
+    }
+}
+
+document.addEventListener('click', (event) => {
+    if (event.target.classList.contains('question-warn')) {
+
+        logWarn(event.target.parentElement.parentElement.id.split('-')[1], event.target);
+        displayGroupSelector();
+
+    }
+});
+
+
 
 function logCorrectAnswer(questionIndex) {
     if (!currentSession) return;
@@ -1081,8 +1216,44 @@ wrongList.addEventListener('wheel', (e) => {
     wrongList.scrollLeft += e.deltaY * 3;
 });
 
+warnList.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    warnList.scrollLeft += e.deltaY * 3;
+});
+
 wrongList.addEventListener('click', function (event) {
     if (event.target.classList.contains('wrong-q')) {
+        const idPart = event.target.id.split('-')[1]; // Получаем часть id после "wrong-"
+
+        let targetQuestion = null;
+
+        // Проверяем формат id: если содержит "_" - это новый формат, иначе - старый
+        if (idPart.includes('_')) {
+            // Новый формат: wrong-1_6 -> ищем вопрос с текстом "1.6"
+            const questionNumber = idPart.replace('_', '.'); // Преобразуем в "1.6"
+
+            // Ищем вопрос по номеру в тексте вопроса
+            const questions = document.querySelectorAll('.question');
+            for (const question of questions) {
+                const questionText = question.querySelector('.question-text');
+                if (questionText && questionText.textContent.includes(questionNumber + ' ')) {
+                    targetQuestion = question;
+                    break;
+                }
+            }
+        } else {
+            // Старый формат: wrong-5 -> ищем question-5
+            targetQuestion = document.getElementById(`question-${idPart}`);
+        }
+
+        if (targetQuestion) {
+            scrollToNextVisibleQuestion("cur", targetQuestion);
+        }
+    }
+});
+
+warnList.addEventListener('click', function (event) {
+    if (event.target.classList.contains('warn-q')) {
         const idPart = event.target.id.split('-')[1]; // Получаем часть id после "wrong-"
 
         let targetQuestion = null;

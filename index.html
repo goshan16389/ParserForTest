@@ -51,7 +51,7 @@
             transform: translateY(-100%);
         }
 
-        .wrong-list {
+        .wrong-list, .warn-list {
             display: flex;
             gap: 2px;
             width: 100%;
@@ -67,12 +67,18 @@
             box-sizing: border-box;
         }
 
-        .wrong-list::-webkit-scrollbar {
+        .warn-list {
+            background-color: #bda6e0;
+        }
+
+        .wrong-list::-webkit-scrollbar, 
+        .warn-list::-webkit-scrollbar {
             display: none;
             height: 0;
         }
 
-        .wrong-q {
+        .wrong-q,
+        .warn-q {
             display: inline-block;
             background-color: rgb(236, 90, 90);
             min-width: 25px;
@@ -82,6 +88,14 @@
             flex-shrink: 0;
             text-align: center;
             cursor: pointer;
+        }
+
+        .warn-q {
+            background-color: rgb(243, 212, 111);
+        }
+
+        .warn-q:hover {
+            background-color: rgb(201, 171, 73);
         }
 
         .wrong-q:hover {
@@ -225,7 +239,7 @@
         }
 
         .question-number {
-            background: #007bff;
+            background: #0056b3;
             color: white;
             width: 30px;
             height: 30px;
@@ -234,9 +248,31 @@
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            margin-right: 15px;
+            margin-right: 10px;
             flex-shrink: 0;
-            border: 2px solid;
+            border: 2px solid #146ecf;
+        }
+
+        .question-warn {
+            background-color: #0056b3;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            transition: all 0.15s ease-in-out;
+            cursor: pointer;
+            margin: 0 0 0 10px;
+            line-height: 30px;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            color: white;
+            border: 2px solid #146ecf;
+        }
+
+        .question-warn:hover,
+        .question-warn.active {
+            background-color: orange;
+            border: 2px solid rgb(218, 150, 24);
         }
 
         .question-text {
@@ -574,7 +610,15 @@
                 width: 24px;
                 height: 24px;
                 font-size: 14px;
-                margin-right: 10px;
+                margin-right: 5px;
+            }
+
+            .question-warn {
+                width: 24px;
+                height: 24px;
+                margin-left: 5px;
+                line-height: 24px;
+                
             }
 
             .option {
@@ -599,12 +643,12 @@
                 height: 60px;
             }
 
-            .wrong-list {
+            .wrong-list, .warn-list {
                 height: 24px;
                 padding: 2px;
             }
 
-            .wrong-q {
+            .wrong-q, .warn-q {
                 min-width: 20px;
                 line-height: 24px;
                 font-size: 14px;
@@ -723,6 +767,9 @@
 
         </div>
         <div class="wrong-list">
+
+        </div>
+        <div class="warn-list">
 
         </div>
     </div>
