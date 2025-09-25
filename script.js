@@ -1338,6 +1338,10 @@ document.addEventListener('keydown', function (event) {
     } else if (event.key.toLowerCase() === 'e') {
         event.preventDefault();
         scrollToNextVisibleQuestion('next', currentQuestion);
+    } else if (event.key.toLowerCase() === 'r') {
+        event.preventDefault();
+        logWarn(currentQuestion.id.split('-')[1], currentQuestion.querySelector('.question-warn'));
+        displayGroupSelector();
     }
 
     // Выбор ответа цифрами 1-6
