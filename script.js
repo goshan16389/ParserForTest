@@ -1102,7 +1102,7 @@ function logWarn(questionIndex, img) {
 
     const warnP = document.getElementById('warnAmount');
     warnP.textContent = currentSession.warns.length;
-    
+
 }
 
 document.addEventListener('click', (event) => {
@@ -1215,8 +1215,15 @@ images.forEach(img => {
 
         // Использование fixed позиции
         tooltip.style.position = 'fixed';
-        tooltip.style.left = (rect.right) + 'px';
-        tooltip.style.top = (rect.bottom) + 'px';
+        if (rect.right > window.innerWidth * 0.8) {
+            // Показываем tooltip слева от элемента
+            tooltip.style.left = (rect.left - tooltip.offsetWidth - 5) + 'px'; // 5px отступ
+            tooltip.style.top = (rect.bottom) + 'px';
+        } else {
+            // Показываем tooltip справа от элемента (как было)
+            tooltip.style.left = (rect.right) + 'px';
+            tooltip.style.top = (rect.bottom) + 'px';
+        }
         tooltip.style.opacity = '1';
 
         // Очищаем предыдущий таймер, если был
@@ -1538,6 +1545,8 @@ async function exportToDocx() {
             return warnNumbers.includes(questionIndex);
         });
     }
+
+    if (wrongQuestions.length == 0 && warnQuestions.length == 0) return;
 
     // Remove duplicates from warnQuestions that exist in wrongQuestions
     warnQuestions = warnQuestions.filter(warnQ =>
