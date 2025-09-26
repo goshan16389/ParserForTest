@@ -1,7 +1,7 @@
 let testData = [];
 let qAmount = 0;
 let htmlTest = '';
-const reallyAllQuestions = [];
+let reallyAllQuestions = [];
 
 betaMode = false;
 
@@ -122,6 +122,7 @@ async function processFile(content, version) {
 
 function parseQuestions(htmlContent) {
     const questions = [];
+    reallyAllQuestions = [];
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = htmlContent;
 
