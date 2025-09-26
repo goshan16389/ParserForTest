@@ -127,7 +127,7 @@ function parseQuestions(htmlContent) {
 
     const elements = Array.from(tempDiv.children);
     let currentQuestion = null;
-    let currentGroup = "Общие вопросы";
+    let currentGroup = "";
 
     for (let i = 0; i < elements.length; i++) {
         const element = elements[i];
@@ -166,6 +166,7 @@ function parseQuestions(htmlContent) {
 
             listItems.forEach((li, index) => {
                 let optionText = li.textContent.trim();
+                let unredactedText = optionText;
                 let isCorrect = false;
                 let multiVals = null;
 
@@ -188,6 +189,7 @@ function parseQuestions(htmlContent) {
 
                 options.push({
                     text: optionText,
+                    unredactedText: unredactedText,
                     originalIndex: index,
                     isCorrect: isCorrect,
                     multiVals: multiVals
@@ -596,7 +598,7 @@ function displayGroupSelector() {
         <option value="with_images">🖼️ С картинками (${withImagesCount})</option>
         <option value="without_images">📝 Без картинок (${withoutImagesCount})</option>
         <option value="wrong">❌ Вопросы с ошибками (${wrongCount})</option>
-        <option value="warn">Отмеченные вопросы (${warnCount})</option>
+        <option value="warn">⭐ Отмеченные вопросы (${warnCount})</option>
     `;
 
     const groups = [...new Set(window.allQuestions.map(q => q.group))];
@@ -892,7 +894,7 @@ function loadSession() {
                     const remainsP = document.getElementById('remainsAmount');
                     correctP.textContent = currentSession.correctAnswers;
                     incorrectP.textContent = currentSession.incorrectAnswers;
-                    remainsP.textContent = currentSession.totalQuestions - currentSession.correctAnswers - currentSession.incorrectAnswers;
+                    remainsP.textContent = reallyAllQuestions.length - currentSession.correctAnswers - currentSession.incorrectAnswers;
 
                 }
 
@@ -924,6 +926,7 @@ function loadSession() {
                     }
 
                     if (question) {
+                        console.log("добавил")
                         wrongList.innerHTML += `<span id="wrong-${displayId}" class="wrong-q">${questionNumber}</span>`;
                     }
                 });
@@ -955,7 +958,7 @@ function loadSession() {
 
                     if (question) {
                         warnList.innerHTML += `<span id="warn-${displayId}" class="warn-q">${questionNumber}</span>`;
-                        
+
                     }
                 });
             }
@@ -1474,4 +1477,178 @@ function loadBetaMode() {
         console.warn('Не удалось загрузить betaMode:', error);
         betaMode = false; // значение по умолчанию
     }
+}
+
+async function exportToDocx() {
+    wrongNumbers = currentSession.errors;
+    warnNumbers = currentSession.warns;
+    wrongQuestions = [];
+    warnQuestions = [];
+
+    if (!betaMode) {
+        wrongNumbers.forEach(element => {
+            wrongQuestions.push(reallyAllQuestions[element])
+        });
+        warnNumbers.forEach(element => {
+            warnQuestions.push(reallyAllQuestions[element])
+        });
+    } else {
+        wrongQuestions = reallyAllQuestions.filter(question => {
+            const questionIndex = question.question.split(' ')[0].replace('.', '_');
+            return wrongNumbers.includes(questionIndex);
+        });
+
+        warnQuestions = reallyAllQuestions.filter(question => {
+            const questionIndex = question.question.split(' ')[0].replace('.', '_');
+            return warnNumbers.includes(questionIndex);
+        });
+    }
+
+    // Remove duplicates from warnQuestions that exist in wrongQuestions
+    warnQuestions = warnQuestions.filter(warnQ => 
+        !wrongQuestions.some(wrongQ => wrongQ.question === warnQ.question)
+    );
+
+    wrongStruct = {
+        text: "ТЕМА: Вопросы с ошибками",
+        questions: wrongQuestions
+    };
+
+    warnStruct = {
+        text: "ТЕМА: Помеченные вопросы",
+        questions: warnQuestions
+    };
+
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel, ImageRun } = docx;
+
+    // Создаём документ
+    const doc = new Document({
+        numbering: {
+            config: [
+                ...wrongStruct.questions.map((_, qIndex) => ({
+                    reference: `wrong-question-${qIndex}-numbering`,
+                    id: qIndex + 1,
+                    levels: [{
+                        level: 0,
+                        format: "decimal",
+                        text: "%1.",
+                        alignment: "left",
+                        style: { paragraph: { indent: { left: 720, hanging: 360 } } }
+                    }]
+                })),
+                ...warnStruct.questions.map((_, qIndex) => ({
+                    reference: `warn-question-${qIndex}-numbering`,
+                    id: qIndex + wrongStruct.questions.length + 1,
+                    levels: [{
+                        level: 0,
+                        format: "decimal",
+                        text: "%1.",
+                        alignment: "left",
+                        style: { paragraph: { indent: { left: 720, hanging: 360 } } }
+                    }]
+                }))
+            ]
+        },
+        sections: [{
+            properties: {},
+            children: [
+                new Paragraph({
+                    text: wrongStruct.text
+                }),
+                ...(await Promise.all(wrongStruct.questions.map(async (q, qIndex) => {
+                    console.log(`Обработка вопроса с ошибкой ${qIndex}:`, q.question, "Изображение:", q.image);
+                    const imageSize = q.image && q.image !== null ? await getImageSize(q.image) : null;
+                    console.log(`Размеры изображения для вопроса с ошибкой ${qIndex}:`, imageSize);
+                    return [
+                        new Paragraph({
+                            children: [
+                                new TextRun({ text: q.question || '' }),
+                                ...(q.image && q.image !== null ? [
+                                    new ImageRun({
+                                        data: new Uint8Array([...atob(q.image.split(',')[1])].map(char => char.charCodeAt(0))),
+                                        transformation: {
+                                            width: imageSize ? imageSize.width : 100,
+                                            height: imageSize ? imageSize.height : 100
+                                        }
+                                    })
+                                ] : [])
+                            ]
+                        }),
+                        ...q._originalOptions.map((answer) => (
+                            new Paragraph({
+                                numbering: {
+                                    reference: `wrong-question-${qIndex}-numbering`,
+                                    id: qIndex + 1,
+                                    level: 0
+                                },
+                                children: [new TextRun({ text: answer.unredactedText })]
+                            })
+                        ))
+                    ];
+                }))).flat(),
+                // Add spacing between sections
+                new Paragraph({ text: "", spacing: { after: 200 } }),
+                new Paragraph({
+                    text: warnStruct.text
+                }),
+                ...(await Promise.all(warnStruct.questions.map(async (q, qIndex) => {
+                    console.log(`Обработка помеченного вопроса ${qIndex}:`, q.question, "Изображение:", q.image);
+                    const imageSize = q.image && q.image !== null ? await getImageSize(q.image) : null;
+                    console.log(`Размеры изображения для помеченного вопроса ${qIndex}:`, imageSize);
+                    return [
+                        new Paragraph({
+                            children: [
+                                new TextRun({ text: q.question || '' }),
+                                ...(q.image && q.image !== null ? [
+                                    new ImageRun({
+                                        data: new Uint8Array([...atob(q.image.split(',')[1])].map(char => char.charCodeAt(0))),
+                                        transformation: {
+                                            width: imageSize ? imageSize.width : 100,
+                                            height: imageSize ? imageSize.height : 100
+                                        }
+                                    })
+                                ] : [])
+                            ]
+                        }),
+                        ...q._originalOptions.map((answer) => (
+                            new Paragraph({
+                                numbering: {
+                                    reference: `warn-question-${qIndex}-numbering`,
+                                    id: qIndex + wrongStruct.questions.length + 1,
+                                    level: 0
+                                },
+                                children: [new TextRun({ text: answer.unredactedText })]
+                            })
+                        ))
+                    ];
+                }))).flat()
+            ]
+        }]
+    });
+
+    // Функция для получения размеров изображения
+    function getImageSize(base64String) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.src = base64String;
+            img.onload = () => resolve({ width: img.width, height: img.height });
+            img.onerror = () => {
+                console.error("Ошибка загрузки изображения:", base64String);
+                resolve({ width: 100, height: 100 });
+            };
+        });
+    }
+
+    // Упаковываем в Blob
+    const blob = await Packer.toBlob(doc);
+
+    // Скачиваем
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'questions.docx';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }

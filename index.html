@@ -51,7 +51,17 @@
             transform: translateY(-100%);
         }
 
-        .wrong-list, .warn-list {
+        .lists {
+            display: grid;
+            grid-template-areas: "wrong func"
+                "repeat func";
+            grid-template-columns: auto 30px;
+            column-gap: 5px;
+            margin-right: 5px;
+        }
+
+        .wrong-list,
+        .warn-list {
             display: flex;
             gap: 2px;
             width: 100%;
@@ -67,14 +77,31 @@
             box-sizing: border-box;
         }
 
-        .warn-list {
-            background-color: #bda6e0;
+        .wrong-list {
+            grid-area: wrong;
         }
 
-        .wrong-list::-webkit-scrollbar, 
+        .warn-list {
+            background-color: #bda6e0;
+            grid-area: repeat;
+        }
+
+        .wrong-list::-webkit-scrollbar,
         .warn-list::-webkit-scrollbar {
             display: none;
             height: 0;
+        }
+
+        .export {
+            grid-area: func;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+
+        .export .top-btn:hover {
+            background-color: #23cf73;
         }
 
         .wrong-q,
@@ -195,7 +222,7 @@
         .reset,
         #fromServer,
         #clearCache,
-        #my-file, 
+        #my-file,
         #beta {
             margin-left: 5px;
         }
@@ -481,7 +508,8 @@
             /* показываем при наведении */
         }
 
-        .version, .beta {
+        .version,
+        .beta {
             width: 30px;
             height: 30px;
             background-color: #6b46c1;
@@ -497,7 +525,8 @@
             cursor: pointer;
         }
 
-        .version p, .beta p {
+        .version p,
+        .beta p {
             color: white;
             font-size: 9px;
             font-weight: bold;
@@ -618,7 +647,7 @@
                 height: 24px;
                 margin-left: 5px;
                 line-height: 24px;
-                
+
             }
 
             .option {
@@ -643,12 +672,18 @@
                 height: 60px;
             }
 
-            .wrong-list, .warn-list {
+            .lists {
+                margin-right: 0;
+            }
+
+            .wrong-list,
+            .warn-list {
                 height: 24px;
                 padding: 2px;
             }
 
-            .wrong-q, .warn-q {
+            .wrong-q,
+            .warn-q {
                 min-width: 20px;
                 line-height: 24px;
                 font-size: 14px;
@@ -766,11 +801,16 @@
             </div>
 
         </div>
-        <div class="wrong-list">
+        <div class="lists">
+            <div class="wrong-list">
 
-        </div>
-        <div class="warn-list">
+            </div>
+            <div class="warn-list">
 
+            </div>
+            <div class="export">
+                <img src="Assets/docx.svg" onclick="exportToDocx()" class="top-btn" alt="Экспортировать в файл">
+            </div>
         </div>
     </div>
 
@@ -788,6 +828,7 @@
     <div id="global-tooltip"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.17/mammoth.browser.min.js"></script>
+    <script src="https://unpkg.com/docx@9.5.1/dist/index.umd.cjs"></script>
     <script src="script.js"></script>
 </body>
 
