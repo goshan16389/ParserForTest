@@ -378,6 +378,10 @@ function checkAnswer(questionIndex, selectedOptionIndex, addResult) {
                 if (!document.getElementById(`wrong-${questionIndex}`)) {
                     const questionNumber = question.question.split(' ')[0];
                     wrongList.innerHTML += `<span id="wrong-${questionIndex}" class="wrong-q">${questionNumber}</span>`;
+                    wrongList.scrollTo({
+                        left: wrongList.scrollWidth - wrongList.clientWidth,
+                        behavior: 'smooth'
+                    });
                 }
             } else {
                 // ИСПРАВЛЕННАЯ ЧАСТЬ - проверка по номеру вопроса
@@ -387,6 +391,10 @@ function checkAnswer(questionIndex, selectedOptionIndex, addResult) {
                 // Проверяем существование элемента по новому id
                 if (!document.getElementById(`wrong-${questionId}`)) {
                     wrongList.innerHTML += `<span id="wrong-${questionId}" class="wrong-q">${questionNumberText}</span>`;
+                    wrongList.scrollTo({
+                        left: wrongList.scrollWidth - wrongList.clientWidth,
+                        behavior: 'smooth'
+                    });
                 }
             }
 
@@ -896,9 +904,11 @@ function loadSession() {
                     const correctP = document.getElementById('correctAmount');
                     const incorrectP = document.getElementById('incorrectAmount');
                     const remainsP = document.getElementById('remainsAmount');
+                    const warnP = document.getElementById('warnAmount');
                     correctP.textContent = currentSession.correctAnswers;
                     incorrectP.textContent = currentSession.incorrectAnswers;
                     remainsP.textContent = reallyAllQuestions.length - currentSession.correctAnswers - currentSession.incorrectAnswers;
+                    warnP.textContent = currentSession.warns.length;
 
                 }
 
@@ -934,6 +944,11 @@ function loadSession() {
                     }
                 });
 
+                wrongList.scrollTo({
+                    left: wrongList.scrollWidth - wrongList.clientWidth,
+                    behavior: 'smooth'
+                });
+
                 currentSession.warns.forEach(identifier => {
                     let question = null;
                     let questionNumber = '';
@@ -963,6 +978,11 @@ function loadSession() {
                         warnList.innerHTML += `<span id="warn-${displayId}" class="warn-q">${questionNumber}</span>`;
 
                     }
+                });
+
+                warnList.scrollTo({
+                    left: warnList.scrollWidth - warnList.clientWidth,
+                    behavior: 'smooth'
                 });
             }
         }
@@ -1043,6 +1063,10 @@ function logWarn(questionIndex, img) {
             if (!document.getElementById(`warn-${questionIndex}`)) {
                 const questionNumber = question.question.split(' ')[0];
                 warnList.innerHTML += `<span id="warn-${questionIndex}" class="warn-q">${questionNumber}</span>`;
+                warnList.scrollTo({
+                    left: warnList.scrollWidth - warnList.clientWidth,
+                    behavior: 'smooth'
+                });
             }
         } else {
             const questionNumberText = question.question.split(' ')[0]; // Получаем "12.23"
@@ -1051,6 +1075,10 @@ function logWarn(questionIndex, img) {
             // Проверяем существование элемента по новому id
             if (!document.getElementById(`warn-${questionId}`)) {
                 warnList.innerHTML += `<span id="warn-${questionId}" class="warn-q">${questionNumberText}</span>`;
+                warnList.scrollTo({
+                    left: warnList.scrollWidth - warnList.clientWidth,
+                    behavior: 'smooth'
+                });
             }
         }
     } else {
@@ -1071,6 +1099,10 @@ function logWarn(questionIndex, img) {
             }
         }
     }
+
+    const warnP = document.getElementById('warnAmount');
+    warnP.textContent = currentSession.warns.length;
+    
 }
 
 document.addEventListener('click', (event) => {
@@ -1289,7 +1321,7 @@ warnList.addEventListener('click', function (event) {
     }
 });
 
-function scrollToNextVisibleQuestion(mode, currentElement, offset = 80) {
+function scrollToNextVisibleQuestion(mode, currentElement, offset = 100) {
     let target = currentElement;
     if (mode === "next") {
         if (isMobile) return;
@@ -1508,7 +1540,7 @@ async function exportToDocx() {
     }
 
     // Remove duplicates from warnQuestions that exist in wrongQuestions
-    warnQuestions = warnQuestions.filter(warnQ => 
+    warnQuestions = warnQuestions.filter(warnQ =>
         !wrongQuestions.some(wrongQ => wrongQ.question === warnQ.question)
     );
 

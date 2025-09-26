@@ -79,6 +79,7 @@
 
         .wrong-list {
             grid-area: wrong;
+            border-top-right-radius: 10px;
         }
 
         .warn-list {
@@ -109,7 +110,6 @@
             display: inline-block;
             background-color: rgb(236, 90, 90);
             min-width: 25px;
-            line-height: 20px;
             border-radius: 25px;
             padding: 0 5px 0 5px;
             flex-shrink: 0;
@@ -412,6 +412,13 @@
             color: rgba(63, 26, 228, 0.822)
         }
 
+        #warnAmount {
+            border-left: 3px solid rgba(51, 49, 49, 0.1);
+            padding-left: 5px;
+            color: rgb(241, 142, 12);
+            margin-left: 0;
+        }
+
         .mySelect {
             height: 30px;
             font-size: 20px;
@@ -605,24 +612,17 @@
             .totalResult {
                 flex-wrap: nowrap;
                 height: auto;
-                max-width: 120px;
+                max-width: 150px;
                 /* Limit width */
                 overflow: hidden;
             }
 
             .number {
                 font-size: 16px;
-                margin: 0 3px;
-            }
-
-            #correctAmount,
-            #incorrectAmount,
-            #remainsAmount {
-                padding: 0 3px;
             }
 
             .test-container {
-                margin-top: 125px;
+                margin-top: 150px;
                 /* Adjusted for header */
             }
 
@@ -682,10 +682,19 @@
                 padding: 2px;
             }
 
+            .wrong-list {
+                border-top-left-radius: 10px;
+            }
+
+            .warn-list {
+                border-bottom-right-radius: 10px;
+                border-bottom-left-radius: 10px;
+            }
+
             .wrong-q,
             .warn-q {
                 min-width: 20px;
-                line-height: 24px;
+                line-height: 20px;
                 font-size: 14px;
                 padding: 0 4px;
             }
@@ -793,6 +802,7 @@
                 <p id="correctAmount" class="number">0</p>
                 <p id="incorrectAmount" class="number">0</p>
                 <p id="remainsAmount" class="number">666</p>
+                <p id="warnAmount" class="number">0</p>
             </div>
             <img src="Assets/reset.svg" onclick="resetTest()" class="top-btn reset" alt="Начать заново">
             <img src="Assets/test.svg" onclick="createTest()" class="top-btn reset" alt="Создать тест">
