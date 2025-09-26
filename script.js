@@ -19,35 +19,32 @@ const wrongList = document.querySelector('.wrong-list');
 const warnList = document.querySelector('.warn-list');
 
 async function processFile(content, version) {
-
     const loadingDiv = document.getElementById('loading');
+    const errorDiv = document.getElementById('error');
 
     if (content === "web" && version == "my-file") {
-        loadingDiv.textContent = "Выберите файл из хранящихся на сервере! ⚠️"
+        loadingDiv.textContent = "Выберите файл из хранящихся на сервере! ⚠️";
         return;
-    };
+    }
     updateTotalResult("clear");
     qAmount = 0;
-
-    const fileInputDocx = document.getElementById('docxFile');
-    const errorDiv = document.getElementById('error');
 
     errorDiv.textContent = '';
     errorDiv.classList.add("hidden");
     loadingDiv.style.display = 'block';
 
-    if (content === undefined) {
-        resetTest();
-        loadingDiv.textContent = 'Читаю файл... ⏳';
-        if (!fileInputDocx.files.length) {
-            errorDiv.textContent = 'Пожалуйста, выберите файл';
-            errorDiv.classList.remove("hidden");
-            loadingDiv.style.display = 'none';
-            return;
-        }
-
-        const file = fileInputDocx.files[0];
-        try {
+    try {
+        if (content === undefined) {
+            resetTest();
+            loadingDiv.textContent = 'Читаю файл... ⏳';
+            const fileInputDocx = document.getElementById('docxFile');
+            if (!fileInputDocx.files.length) {
+                errorDiv.textContent = 'Пожалуйста, выберите файл';
+                errorDiv.classList.remove("hidden");
+                loadingDiv.style.display = 'none';
+                return;
+            }
+            const file = fileInputDocx.files[0];
             const arrayBuffer = await file.arrayBuffer();
             const result = await mammoth.convertToHtml(
                 { arrayBuffer },
@@ -62,17 +59,12 @@ async function processFile(content, version) {
                 }
             );
             htmlTest = result.value;
-        } catch (error) {
-            errorDiv.textContent = 'Ошибка при обработке файла';
-            errorDiv.classList.remove("hidden");
-            loadingDiv.style.display = 'none';
-            console.error('Error:', error);
-        }
-    } else if (content === "web") {
-        loadingDiv.textContent = 'Ищу на сервере... ⏳';
-        try {
+            if (!htmlTest || typeof htmlTest !== 'string' || htmlTest.trim() === '') {
+                throw new Error('Конвертированный HTML пуст или некорректен');
+            }
+        } else if (content === "web") {
+            loadingDiv.textContent = 'Ищу на сервере... ⏳';
             const response = await fetch(`/${version}.docx`);
-            console.log(response);
             if (!response.ok) {
                 loadingDiv.textContent = 'Файл не найден! ⚠️';
                 return;
@@ -93,31 +85,37 @@ async function processFile(content, version) {
                 }
             );
             htmlTest = result.value;
-        } catch (error) {
-            console.error('Ошибка загрузки файла:', error);
-            return null;
+            if (!htmlTest || typeof htmlTest !== 'string' || htmlTest.trim() === '') {
+                throw new Error('Конвертированный HTML пуст или некорректен');
+            }
+        } else {
+            htmlTest = content;
         }
-    } else {
-        htmlTest = content;
-    }
 
-    testData = parseQuestions(htmlTest);
-    if (testData.length === 0) {
-        errorDiv.textContent = 'Не удалось найти вопросы в файле.';
+        testData = parseQuestions(htmlTest);
+        console.log('Parsed questions:', testData);
+        if (!testData || !Array.isArray(testData) || testData.length === 0) {
+            errorDiv.textContent = 'Не удалось найти вопросы в файле или данные некорректны.';
+            errorDiv.classList.remove("hidden");
+            loadingDiv.style.display = 'none';
+            return;
+        }
+
+        const shuffler = document.getElementById('shuffle');
+        if (shuffler.classList.contains('loaded')) {
+            testData = shuffleArray(testData);
+        }
+
+        displayTest(testData);
+        displayGroupSelector();
+        loadingDiv.style.display = 'none';
+        startNewSession();
+    } catch (error) {
+        errorDiv.textContent = 'Ошибка при обработке файла: ' + error.message;
         errorDiv.classList.remove("hidden");
         loadingDiv.style.display = 'none';
-        return;
+        console.error('Error:', error);
     }
-
-    const shuffler = document.getElementById('shuffle');
-    if (shuffler.classList.contains('loaded')) {
-        testData = shuffleArray(testData);
-    }
-
-    displayTest(testData);
-    displayGroupSelector();
-    loadingDiv.style.display = 'none';
-    startNewSession();
 }
 
 function parseQuestions(htmlContent) {
@@ -577,20 +575,23 @@ function displayGroupSelector() {
 
     let withImagesCount = 0;
     let withoutImagesCount = 0;
+    let totalQuestions = 0;
 
-    const questionsContainer = document.getElementById('questions');
-    if (questionsContainer) {
-        const questionElements = questionsContainer.querySelectorAll('.question');
-        questionElements.forEach(div => {
-            if (div.querySelector('img')) {
-                withImagesCount++;
-            } else {
-                withoutImagesCount++;
-            }
-        });
+    if (window.allQuestions && Array.isArray(window.allQuestions)) {
+        totalQuestions = window.allQuestions.length;
+        const questionsContainer = document.getElementById('questions');
+        if (questionsContainer) {
+            const questionElements = questionsContainer.querySelectorAll('.question');
+            questionElements.forEach(div => {
+                if (div.querySelector('img') || div.innerHTML.includes('data:image')) {
+                    withImagesCount++;
+                } else {
+                    withoutImagesCount++;
+                }
+            });
+        }
     }
 
-    const totalQuestions = window.allQuestions.length;
     const wrongCount = currentSession?.errors?.length || 0;
     const warnCount = currentSession?.warns?.length || 0;
 
@@ -602,26 +603,28 @@ function displayGroupSelector() {
         <option value="warn">⭐ Отмеченные вопросы (${warnCount})</option>
     `;
 
-    const groups = [...new Set(window.allQuestions.map(q => q.group))];
-    const groupCounts = {};
-    window.allQuestions.forEach(question => {
-        if (question.group) {
-            groupCounts[question.group] = (groupCounts[question.group] || 0) + 1;
-        }
-    });
+    if (window.allQuestions && Array.isArray(window.allQuestions)) {
+        const groups = [...new Set(window.allQuestions.map(q => q.group))];
+        const groupCounts = {};
+        window.allQuestions.forEach(question => {
+            if (question.group) {
+                groupCounts[question.group] = (groupCounts[question.group] || 0) + 1;
+            }
+        });
 
-    const sorted = groups.sort((a, b) => {
-        const numA = parseInt(a.match(/\d+/)?.[0] || 0);
-        const numB = parseInt(b.match(/\d+/)?.[0] || 0);
-        return numA - numB;
-    });
+        const sorted = groups.sort((a, b) => {
+            const numA = parseInt(a.match(/\d+/)?.[0] || 0);
+            const numB = parseInt(b.match(/\d+/)?.[0] || 0);
+            return numA - numB;
+        });
 
-    sorted.forEach(group => {
-        if (group) {
-            const count = groupCounts[group] || 0;
-            groupSelect.innerHTML += `<option value="${group}">${group} (${count})</option>`;
-        }
-    });
+        sorted.forEach(group => {
+            if (group) {
+                const count = groupCounts[group] || 0;
+                groupSelect.innerHTML += `<option value="${group}">${group} (${count})</option>`;
+            }
+        });
+    }
 
     groupSelect.onchange = function () {
         filterQuestionsByGroup(this.value);
