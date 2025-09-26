@@ -1,4 +1,6 @@
 let testData = [];
+let shufflerData = [];
+let isShuffler = false;
 let qAmount = 0;
 let htmlTest = '';
 const reallyAllQuestions = [];
@@ -111,10 +113,13 @@ async function processFile(content, version) {
 
     const shuffler = document.getElementById('shuffle');
     if (shuffler.classList.contains('loaded')) {
-        testData = shuffleArray(testData);
+        shufflerData = shuffleArray(testData);
+        isShuffler = true;
     }
 
-    displayTest(testData);
+    if (!isShuffler) displayTest(testData);
+    else displayTest(shufflerData);
+    
     displayGroupSelector();
     loadingDiv.style.display = 'none';
     startNewSession();
@@ -1143,10 +1148,23 @@ document.getElementById('docxFile').addEventListener('change', function (e) {
 });
 
 document.getElementById('shuffle').addEventListener('click', function () {
+    let arrayEmpty = true;
+    if (testData.length != 0) arrayEmpty = false;
     if (this.classList.contains('loaded')) {
+        isShuffler = false;
         this.classList.remove('loaded');
+        if(!arrayEmpty) {
+            shufflerData.length = 0;
+            displayTest(testData);
+        }
+        
     } else {
         this.classList.add('loaded');
+        isShuffler = true;
+        if(!arrayEmpty) {
+            shufflerData = shuffleArray(testData);
+            displayTest(shufflerData);
+        }  
     }
 });
 
@@ -1444,7 +1462,8 @@ function createTest() {
 
     const shuffler = document.getElementById('shuffle');
     if (shuffler.classList.contains('loaded')) {
-        questions = shuffleArray(questions);
+        shufflerData = shuffleArray(questions);
+        isShuffler = true;
     }
 
     qAmount = 0;
@@ -1453,9 +1472,8 @@ function createTest() {
 
     if (betaMode) resetTest(true);
     else resetTest();
-    displayTest(questions);
-
-
+    if(!isShuffler) displayTest(testData);
+    else displayTest(shufflerData);
 }
 
 // Функция сохранения betaMode в localStorage
