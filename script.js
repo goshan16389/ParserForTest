@@ -428,6 +428,8 @@ function updateTotalResult(operation) {
         correctP.textContent = 0;
         incorrectP.textContent = 0;
         remainsP.textContent = qAmount;
+        const warnP = document.getElementById("warnAmount");
+        warnP.textContent = 0;
         endSession();
     } else if (operation == "-+") {
         correctP.textContent = Number(correctP.textContent) - 1;
