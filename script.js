@@ -927,7 +927,6 @@ function loadSession() {
                     }
 
                     if (question) {
-                        console.log("добавил")
                         wrongList.innerHTML += `<span id="wrong-${displayId}" class="wrong-q">${questionNumber}</span>`;
                     }
                 });
