@@ -853,7 +853,7 @@ function initSessions() {
 
 // Функция сохранения сессии
 function saveSession() {
-    if (!currentSession || (currentSession.correctAnswers === 0 && currentSession.incorrectAnswers === 0)) {
+    if (!currentSession || ((currentSession.correctAnswers === 0 && currentSession.incorrectAnswers === 0) && currentSession.warns.length === 0)) {
         return;
     }
     try {
