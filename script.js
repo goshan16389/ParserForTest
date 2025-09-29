@@ -417,6 +417,7 @@ function updateTotalResult(operation) {
     const remainsP = document.getElementById('remainsAmount');
     const correctP = document.getElementById('correctAmount');
     const incorrectP = document.getElementById('incorrectAmount');
+    const percentP = document.getElementById('correctToWrong');
 
     if (operation == "+") {
         correctP.textContent = Number(correctP.textContent) + 1;
@@ -428,6 +429,7 @@ function updateTotalResult(operation) {
         correctP.textContent = 0;
         incorrectP.textContent = 0;
         remainsP.textContent = qAmount;
+        percentP.textContent = "0%";
         const warnP = document.getElementById("warnAmount");
         warnP.textContent = 0;
         endSession();
@@ -438,6 +440,8 @@ function updateTotalResult(operation) {
         incorrectP.textContent = Number(incorrectP.textContent) - 1;
         remainsP.textContent = Number(remainsP.textContent) + 1;
     }
+
+    if((correctP.textContent != 0) && (incorrectP.textContent != 0)) percentP.textContent = Math.round(((Number(correctP.textContent) / (Number(correctP.textContent) + Number(incorrectP.textContent))) * 100) , 2) + "%";
 }
 
 // Сброс теста
@@ -906,11 +910,15 @@ function loadSession() {
                     const correctP = document.getElementById('correctAmount');
                     const incorrectP = document.getElementById('incorrectAmount');
                     const remainsP = document.getElementById('remainsAmount');
+                    const percentP = document.getElementById('correctToWrong');
                     const warnP = document.getElementById('warnAmount');
                     correctP.textContent = currentSession.correctAnswers;
                     incorrectP.textContent = currentSession.incorrectAnswers;
                     remainsP.textContent = reallyAllQuestions.length - currentSession.correctAnswers - currentSession.incorrectAnswers;
                     warnP.textContent = currentSession.warns.length;
+
+                    if((correctP.textContent != 0) && (incorrectP.textContent != 0)) percentP.textContent = Math.round(((Number(correctP.textContent) / (Number(correctP.textContent) + Number(incorrectP.textContent))) * 100) , 2) + "%";
+
 
                 }
 

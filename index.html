@@ -382,7 +382,7 @@
             border-radius: 5px;
         }
 
-        .totalResult {
+        .totalResult, .totalResultPercent {
             display: flex;
             justify-content: center;
             height: 30px;
@@ -391,7 +391,7 @@
             border-radius: 5px;
         }
 
-        .number {
+        .number, .percent {
             font-size: 25px;
             font-weight: bold;
             line-height: 30px;
@@ -421,6 +421,16 @@
             color: rgb(241, 142, 12);
             margin-left: 0;
         }
+
+        .totalResultPercent {
+            background-color: #6b46c1;
+        }
+
+        #correctToWrong {
+            color: rgb(255, 255, 255)
+        }
+
+        
 
         .mySelect {
             height: 30px;
@@ -612,7 +622,7 @@
                 font-size: 16px;
             }
 
-            .totalResult {
+            .totalResult, .totalResultPercent {
                 flex-wrap: nowrap;
                 height: auto;
                 max-width: 150px;
@@ -620,7 +630,7 @@
                 overflow: hidden;
             }
 
-            .number {
+            .number, .percent {
                 font-size: 16px;
             }
 
@@ -806,6 +816,9 @@
                 <p id="incorrectAmount" class="number">0</p>
                 <p id="remainsAmount" class="number">666</p>
                 <p id="warnAmount" class="number">0</p>
+            </div>
+            <div class="totalResultPercent">
+                <p id="correctToWrong" class="percent">0%</p>
             </div>
             <img src="Assets/reset.svg" onclick="resetTest()" class="top-btn reset" alt="Начать заново">
             <img src="Assets/test.svg" onclick="createTest()" class="top-btn reset" alt="Создать тест">
