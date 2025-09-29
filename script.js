@@ -853,7 +853,7 @@ function initSessions() {
 
 // Функция сохранения сессии
 function saveSession() {
-    if (!currentSession ) {
+    if (!currentSession) {
         return;
     }
     try {
@@ -1697,4 +1697,25 @@ async function exportToDocx() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+}
+
+function showAnswers() {
+    showButton = document.getElementById("show");
+    if (showButton.classList.contains("loaded")) {
+        showButton.classList.remove("loaded");
+        //sessionAnswers = currentSession.userAnswers;
+
+        //console.log(reallyAllQuestions)
+
+    } else {
+        showButton.classList.add("loaded");
+        //showButton.alt = "Убрать ответы";
+
+        reallyAllQuestions.forEach((question, idx) => {
+            checkAnswer(idx, question.correctAnswer, false);
+        });
+        scrollToTopBtn.click();
+    }
+
+    console.log(currentSession)
 }

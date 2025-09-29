@@ -156,7 +156,8 @@
 
         #processDocx:hover,
         #shuffle:hover,
-        #beta:hover {
+        #beta:hover, 
+        #show:hover {
             background-color: #a38adf;
         }
 
@@ -167,14 +168,16 @@
         #fromCache:hover,
         .reset,
         #fromServer:hover,
-        #clearCache:hover {
+        #clearCache:hover,
+        #show.loaded {
             background-color: #4ec987;
         }
 
         #processDocx.loaded:hover,
         #shuffle.loaded:hover,
         #beta.loaded.hover,
-        .reset:hover {
+        .reset:hover,
+        #show.loaded:hover {
             background-color: #23cf73;
         }
 
@@ -223,7 +226,7 @@
         #fromServer,
         #clearCache,
         #my-file,
-        #beta {
+        #beta, #show {
             margin-left: 5px;
         }
 
@@ -809,6 +812,7 @@
             <div class="beta top-btn" id="beta">
                 <p>БЕТА</p>
             </div>
+            <img src="Assets/show.svg" id="show" onclick="showAnswers()" class="top-btn" alt="Показать все ответы (пока возврат к предыдущим ответам не реализован)">
 
         </div>
         <div class="lists">
