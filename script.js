@@ -136,8 +136,7 @@ function parseQuestions(htmlContent) {
         if (!text && tagName !== 'img') continue;
 
         if (tagName === 'p' && (element.innerHTML.includes('ТЕМА'))) {
-            if (isMobile) currentGroup = text.match(/ТЕМА\s+\d+/)[0];
-            else currentGroup = text;
+            currentGroup = text;
             continue;
         }
 
