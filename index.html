@@ -156,8 +156,9 @@
 
         #processDocx:hover,
         #shuffle:hover,
-        #beta:hover, 
-        #show:hover {
+        #beta:hover,
+        #show:hover,
+        #collapse:hover {
             background-color: #a38adf;
         }
 
@@ -169,15 +170,26 @@
         .reset,
         #fromServer:hover,
         #clearCache:hover,
-        #show.loaded {
+        #show.loaded,
+        #collapse.loaded {
             background-color: #4ec987;
+        }
+
+        #collapse {
+            visibility: hidden;
+            transition: 0.3s all;
+        }
+
+        #collapse.loaded {
+            transform: rotateX(180deg);
         }
 
         #processDocx.loaded:hover,
         #shuffle.loaded:hover,
         #beta.loaded.hover,
         .reset:hover,
-        #show.loaded:hover {
+        #show.loaded:hover,
+        #collapse.loaded:hover {
             background-color: #23cf73;
         }
 
@@ -226,7 +238,9 @@
         #fromServer,
         #clearCache,
         #my-file,
-        #beta, #show {
+        #beta,
+        #show,
+        #collapse {
             margin-left: 5px;
         }
 
@@ -382,7 +396,8 @@
             border-radius: 5px;
         }
 
-        .totalResult, .totalResultPercent {
+        .totalResult,
+        .totalResultPercent {
             display: flex;
             justify-content: center;
             height: 30px;
@@ -391,7 +406,8 @@
             border-radius: 5px;
         }
 
-        .number, .percent {
+        .number,
+        .percent {
             font-size: 25px;
             font-weight: bold;
             line-height: 30px;
@@ -430,7 +446,7 @@
             color: rgb(255, 255, 255)
         }
 
-        
+
 
         .mySelect {
             height: 30px;
@@ -506,6 +522,10 @@
             /* только под иконку */
         }
 
+        .ver-select.hidden {
+            display: none;
+        }
+
         /* При наведении - расширяемся под все версии */
         .ver-select:hover {
             width: 175px;
@@ -522,6 +542,8 @@
             transition: opacity 0.2s ease;
             /* плавное появление */
         }
+
+        
 
         .ver-select:hover #version-list {
             opacity: 1;
@@ -559,6 +581,7 @@
         .active {
             background-color: #4ec987;
         }
+        
 
         @media (max-width: 1450px) {
             .mySelect {
@@ -622,7 +645,12 @@
                 font-size: 16px;
             }
 
-            .totalResult, .totalResultPercent {
+            .mySelect.expanded {
+                margin-left: 0;
+            }
+
+            .totalResult,
+            .totalResultPercent {
                 flex-wrap: nowrap;
                 height: auto;
                 max-width: 150px;
@@ -630,7 +658,8 @@
                 overflow: hidden;
             }
 
-            .number, .percent {
+            .number,
+            .percent {
                 font-size: 16px;
             }
 
@@ -751,6 +780,10 @@
             #version-list {
                 opacity: 1;
             }
+
+            #collapse {
+                visibility: visible;
+            }
         }
     </style>
 
@@ -825,7 +858,10 @@
             <div class="beta top-btn" id="beta">
                 <p>БЕТА</p>
             </div>
-            <img src="Assets/show.svg" id="show" onclick="showAnswers()" class="top-btn" alt="Показать все ответы (пока возврат к предыдущим ответам не реализован)">
+            <img src="Assets/show.svg" id="show" onclick="showAnswers()" class="top-btn"
+                alt="Показать все ответы (пока возврат к предыдущим ответам не реализован)">
+            <img src="Assets/collapse.svg" id="collapse" onclick="collapseMenu()" class="top-btn"
+                alt="Включить компактный режим">
 
         </div>
         <div class="lists">
@@ -836,7 +872,7 @@
 
             </div>
             <div class="export">
-                <img src="Assets/docx.svg" onclick="exportToDocx()" class="top-btn" alt="Экспортировать в файл">
+                <img src="Assets/docx.svg" onclick="exportToDocx()" id="export" class="top-btn" alt="Экспортировать в файл">
             </div>
         </div>
     </div>

@@ -441,7 +441,7 @@ function updateTotalResult(operation) {
         remainsP.textContent = Number(remainsP.textContent) + 1;
     }
 
-    if((correctP.textContent != 0) && (incorrectP.textContent != 0)) percentP.textContent = Math.round(((Number(correctP.textContent) / (Number(correctP.textContent) + Number(incorrectP.textContent))) * 100) , 2) + "%";
+    if ((correctP.textContent != 0) && (incorrectP.textContent != 0)) percentP.textContent = Math.round(((Number(correctP.textContent) / (Number(correctP.textContent) + Number(incorrectP.textContent))) * 100), 2) + "%";
 }
 
 // Сброс теста
@@ -917,7 +917,7 @@ function loadSession() {
                     remainsP.textContent = reallyAllQuestions.length - currentSession.correctAnswers - currentSession.incorrectAnswers;
                     warnP.textContent = currentSession.warns.length;
 
-                    if((correctP.textContent != 0) && (incorrectP.textContent != 0)) percentP.textContent = Math.round(((Number(correctP.textContent) / (Number(correctP.textContent) + Number(incorrectP.textContent))) * 100) , 2) + "%";
+                    if ((correctP.textContent != 0) && (incorrectP.textContent != 0)) percentP.textContent = Math.round(((Number(correctP.textContent) / (Number(correctP.textContent) + Number(incorrectP.textContent))) * 100), 2) + "%";
 
 
                 }
@@ -1726,4 +1726,31 @@ function showAnswers() {
     }
 
     console.log(currentSession)
+}
+
+function collapseMenu() {
+    collapseButton = document.getElementById("collapse");
+
+    const elements = document.querySelectorAll('.file-button, .ver-select, #my-file, .top-btn:not(#collapse):not(#export)');
+    const select = document.querySelector('.mySelect');
+
+    if (collapseButton.classList.contains("loaded")) {
+        collapseButton.classList.remove("loaded");
+
+        elements.forEach(element => {
+            element.classList.remove("hidden");
+        });
+
+
+    } else {
+        collapseButton.classList.add("loaded");
+        collapseButton.alt = "Выключить компактный режим";
+
+        elements.forEach(element => {
+            element.classList.add("hidden");
+        });
+
+        select.classList.add('expanded');
+
+    }
 }
