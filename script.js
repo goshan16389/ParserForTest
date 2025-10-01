@@ -138,6 +138,7 @@ function parseQuestions(htmlContent) {
         if (tagName === 'p' && (element.innerHTML.includes('ТЕМА'))) {
             currentGroup = text;
             continue;
+            
         }
 
         if (tagName === 'p' && text && !text.match(/^[1-4][\.\)]\s/)) {
