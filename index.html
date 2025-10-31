@@ -26,7 +26,7 @@
             opacity: 0;
             transition: opacity 0.2s ease;
             pointer-events: none;
-            z-index: 1000;
+            z-index: 1001;
             max-width: 200px;
             box-sizing: border-box;
         }
@@ -167,6 +167,7 @@
         #beta.loaded,
         #toCache:hover,
         #fromCache:hover,
+        #spec-show:hover,
         .reset,
         #fromServer:hover,
         #clearCache:hover,
@@ -232,7 +233,6 @@
         #fromCache,
         #shuffle,
         .mySelect,
-        .error,
         .loading,
         .reset,
         #fromServer,
@@ -528,7 +528,7 @@
 
         /* При наведении - расширяемся под все версии */
         .ver-select:hover {
-            width: 175px;
+            width: 105px;
             /* 30px кнопка + 5px отступ + (30px + 5px) * 4 версии */
 
         }
@@ -543,7 +543,7 @@
             /* плавное появление */
         }
 
-        
+
 
         .ver-select:hover #version-list {
             opacity: 1;
@@ -581,30 +581,262 @@
         .active {
             background-color: #4ec987;
         }
-        
 
-        @media (max-width: 1450px) {
+        #spec-show {
+            margin-left: 5px;
+        }
+
+        /*Для модального окна*/
+        .modal {
+            display: none;
+        }
+
+        .modal.is-open {
+            display: block;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        /* Анимация для overlay */
+        .modal-overlay {
+            animation: overlayFadeIn 0.3s ease-out;
+        }
+
+        .modal[aria-hidden="false"] .modal-overlay {
+            animation: overlayFadeIn 0.3s ease-out;
+        }
+
+        .modal[aria-hidden="true"] .modal-overlay {
+            animation: overlayFadeOut 0.3s ease-out;
+        }
+
+        @keyframes overlayFadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes overlayFadeOut {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+            }
+        }
+
+        .modal-container {
+            background-color: #fff;
+            padding: 0;
+            max-width: 800px;
+            max-height: 90vh;
+            width: 90%;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            /* Анимация для контейнера */
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        /* Анимации открытия и закрытия */
+        .modal[aria-hidden="false"] .modal-container {
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        .modal[aria-hidden="true"] .modal-container {
+            animation: modalSlideOut 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes modalSlideOut {
+            from {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+
+            to {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px;
+            border-bottom: 1px solid #e9ecef;
+            background-color: #f8f9fa;
+        }
+
+        .modal-title {
+            margin: 0;
+            color: #333;
+        }
+
+        .modal-close {
+            width: 30px;
+            height: 30px;
+            background-color: #6b46c1;
+            padding: 5px;
+            border-radius: 50%;
+            box-sizing: border-box;
+
+        }
+
+        .modal-close:hover {
+            background-color: #4ec987;
+            cursor: pointer;
+        }
+
+        .modal-content {
+            padding: 5px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .modal-content p {
+            color: #555;
+        }
+
+        .modal-footer {
+            padding: 5px;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            justify-content: end;
+            background-color: #f8f9fa;
+        }
+
+        .modal-footer p {
+            padding: 0 5px;
+            margin: 0;
+        }
+
+        .art {}
+
+        .art-header {
+            font-weight: bold;
+            font-size: large;
+            margin: 10px 0;
+        }
+
+        .art-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .art-image {
+            height: 30px;
+            width: 30px;
+            border-radius: 5px;
+            background-color: rgb(160, 88, 241);
+            border: 1px solid gray;
+        }
+
+        .art-image.green {
+            background-color: #4ec987;
+        }
+
+        .guide-item {
+            margin: 5px 0;
+            align-items: center;
+            line-height: 16px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .art-list .guide-item {
+            margin: 0 10px;
+        }
+
+        .guide-item span {
+            line-height: 16px;
+        }
+
+        .example {
+            border-radius: 15px;
+            padding: 5px;
+            border: 2px solid #333;
+            justify-self: center;
+            max-width: 90%;
+        }
+
+        .info-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 5px;
+            
+        }
+
+        .info-el {
+            min-width: 80px;
+            background-color: #f3f5f7;
+            border: 2px solid #4ec987;
+            height: 20px;
+            padding: 3px;
+            text-align: center;
+            border-radius: 15px;
+            line-height: 20px;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+
+        .info-el:hover {
+            border: 2px solid #7c4ceb;
+        }
+
+
+        @media (max-width: 1665px) {
             .mySelect {
                 max-width: 500px;
 
             }
         }
 
-        @media (max-width: 1225px) {
+        @media (max-width: 1440px) {
             .mySelect {
                 max-width: 300px;
 
             }
         }
 
-        @media (max-width: 1000px) {
+        @media (max-width: 1240px) {
             .mySelect {
                 max-width: 200px;
 
             }
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 1140px) {
             body {
                 padding: 10px;
                 max-width: 100%;
@@ -745,10 +977,14 @@
             .error,
             .loading {
                 font-size: 14px;
-                height: 24px;
+                height: fit-content;
+                max-height: 96px;
                 line-height: 24px;
                 max-width: 100%;
                 /* Prevent overflow */
+                margin-top: 5px;
+                margin-left: 0;
+
             }
 
             #global-tooltip {
@@ -774,7 +1010,7 @@
             }
 
             .ver-select {
-                width: 175px;
+                width: 105px;
 
             }
 
@@ -814,14 +1050,6 @@
                         <p>ПРОФ</p>
                         <p>УТ</p>
                     </div>
-                    <div class="version" id="spec-cons">
-                        <p>СПЕЦ</p>
-                        <p>КОНС</p>
-                    </div>
-                    <div class="version" id="spec-ut">
-                        <p>СПЕЦ</p>
-                        <p>УТ</p>
-                    </div>
                 </div>
 
             </div>
@@ -837,10 +1065,10 @@
             <img src="Assets/download.svg" id="fromCache" class="top-btn" alt="Загрузить вопросы из кэша">
             <img src="Assets/clear.svg" id="clearCache" class="top-btn" alt="Очистить кэш">
 
-            <div id="error" class="error hidden"></div>
-            <div id="loading" class="loading" style="display: none;">
+            <!-- <div id="error" class="error hidden"></div> -->
+            <!-- <div id="loading" class="loading" style="display: none;">
                 <p></p>
-            </div>
+            </div> -->
             <div id="groupSelector">
 
             </div>
@@ -856,11 +1084,15 @@
             </div>
             <img src="Assets/reset.svg" onclick="resetTest()" class="top-btn reset" alt="Начать заново">
             <img src="Assets/test.svg" onclick="createTest()" class="top-btn reset" alt="Создать тест">
-            <div class="beta top-btn" id="beta">
+            <!-- <div class="beta top-btn" id="beta">
                 <p>БЕТА</p>
-            </div>
+            </div> -->
             <img src="Assets/show.svg" id="show" onclick="showAnswers()" class="top-btn"
-                alt="Показать все ответы (пока возврат к предыдущим ответам не реализован)">
+                alt="Показать все ответы (безвозвратно)">
+
+            <img src="Assets/warn.svg" class="top-btn" id="spec-show" data-micromodal-trigger="modal-1"
+                alt="Показать информацию об экзаменах">
+
             <img src="Assets/collapse.svg" id="collapse" onclick="collapseMenu()" class="top-btn"
                 alt="Включить компактный режим">
 
@@ -873,8 +1105,13 @@
 
             </div>
             <div class="export">
-                <img src="Assets/docx.svg" onclick="exportToDocx()" id="export" class="top-btn" alt="Экспортировать в файл">
+                <img src="Assets/docx.svg" onclick="exportToDocx()" id="export" class="top-btn"
+                    alt="Экспортировать в файл">
             </div>
+        </div>
+        <div id="error" class="error hidden"></div>
+        <div id="loading" class="loading" style="display: none;">
+            <p></p>
         </div>
     </div>
 
@@ -891,9 +1128,174 @@
 
     <div id="global-tooltip"></div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.17/mammoth.browser.min.js"></script>
-    <script src="https://unpkg.com/docx@9.5.1/dist/index.umd.cjs"></script>
-    <script src="script.js"></script>
+    <div class="modal micromodal-slide" id="modal-1" aria-hidden="true">
+        <div class="modal-overlay" tabindex="-1" data-micromodal-close>
+            <div class="modal-container" role="dialog" aria-modal="true" aria-labelledby="modal-1-title">
+                <header class="modal-header">
+                    <h2 class="modal-title" id="modal-1-title">
+                        Информация
+                    </h2>
+                    <img src="Assets/proceed.svg" class="modal-close" alt="Закрыть" aria-label="Close modal"
+                        data-micromodal-close>
+                </header>
+                <main class="modal-content">
+                    <div class="art">
+                        <p class="guide-item">
+                            Сайт предназначен для подготовки к аттестациям 1С. Основным функционалом является создание
+                            тестов из файлов .docx с вопросами.
+                        </p>
+                        <p class="art-header">
+                            Актуальность загруженных материалов
+                        </p>
+                        <div class="art-list">
+                            <p class="guide-item">
+                                ПРОФ Платформа - вопросы от июля 2021г. (100% актуально на сентябрь 2025г.)
+                            </p>
+                            <p class="guide-item">
+                                ПРОФ Управление торговлей - вопросы от февраля 2023г. (100% актуально на октябрь 2025г.)
+                            </p>
+                            <p class="guide-item">
+                                СПЕЦ-КОНС Управление торговлей - билеты и конспекты (100% актуально на октябрь 2025г.)
+                            </p>
+                            <!-- <p class="guide-item">
+                                СПЕЦ Управление торговлей - билеты и конспекты (100% актуально на декабрь 2025г.)
+                            </p> -->
+                        </div>
+                        <p class="art-header">
+                            Элементы управления на сайте
+                        </p>
+                        <div class="art-list">
+                            <p class="guide-item">
+                                <img src="Assets/server.svg" class="art-image"><span>-</span>
+                                <span><b>Скачать с сервера.</b> При наведении на значок (с ПК) выдвигается меню с
+                                    вариантами теста, которые сохранены на сервере. Выбрав один из вариантов теста,
+                                    следует нажать на эту кнопку. Произойдет автоматическая загрузка теста.</span>
+                            </p>
+                            <p class="guide-item">
+                                <img src="Assets/shuffle.svg" class="art-image green"><span>-</span>
+                                <span><b>Перемешать вопросы.</b> Включает режим перемешивания вопросов. Для применения
+                                    следует заново загрузить список вопросов - с сервера или из кэша.</span>
+                            </p>
+                            <p class="guide-item">
+                                <img src="Assets/upload.svg" class="art-image"><span>-</span>
+                                <span><b>Сохранить в кэш.</b> Сохраняет текущие вопросы в выбранную ячейку - из
+                                    выдвижного меню с вариантами теста или в ячейку своего файла. Загрузив файл с
+                                    сервера, следует сохранить его в кэш, нажав эту кнопку.</span>
+                            </p>
+                            <p class="guide-item">
+                                <img src="Assets/download.svg" class="art-image"><span>-</span>
+                                <span><b>Загрузить из кэша.</b> Загружает вопросы из ячейки кэша. Используется для
+                                    повторного создания теста - для первичного и повторного перемешивания или для смены
+                                    теста, если он загружен в кэш.</span>
+                            </p>
+                            <p class="guide-item">
+                                <img src="Assets/clear.svg" class="art-image"><span>-</span>
+                                <span><b>Очистить кэш.</b> Очищает выбранную ячейку кэша.</span>
+                            </p>
+                            <p class="guide-item">
+                                <img src="Assets/reset.svg" class="art-image green"><span>-</span>
+                                <span><b>Сбросить ответы.</b> Полностью очищает все расставленные ответы и сбрасывает
+                                    статистику.</span>
+                            </p>
+                            <p class="guide-item">
+                                <img src="Assets/test.svg" class="art-image green"><span>-</span>
+                                <span><b>Режим теста.</b> Отбирает по одному вопросу из каждого раздела, как на
+                                    аттестации. При повторном нажатии создается новый тест.</span>
+                            </p>
+                            <p class="guide-item">
+                                <img src="Assets/show.svg" class="art-image"><span>-</span>
+                                <span><b>Показать все ответы.</b> Отмечает правильный ответ для каждого вопроса.
+                                    Действие необратимо, для повторного решения необходим сброс теста.</span>
+                            </p>
+                            <p class="guide-item">
+                                <span style="margin: 0; box-sizing: border-box; min-width: 32px; min-height: 32px; line-height: 30px;" class="question-warn">!</span><span>-</span>
+                                <span><b>Отметить вопрос.</b> Добавляет вопрос в список помеченных вопросов, из которых позже можно создать свой документ и загрузить его на сайт для повторения. На вопрос из списка можно нажать и перейти к нему.</span>
+                            </p>
+                            <p class="guide-item">
+                                <img src="Assets/docx.svg" class="art-image"><span>-</span>
+                                <span><b>Сформировать документ.</b> Собирает все данные из списка ошибок и отмеченных
+                                    вопросов и формирует .docx документ, который в дальнейшем можно загрузить на сайт и
+                                    создать из него тест. Удобно для повторения спорных вопросов и своих ошибок.</span>
+                            </p>
+                            <p class="guide-item">
+                                Выпадающее меню позволяет отобразить вопросы из выбранной группы. Справа от него статистика по тесту - количество правильных, неправильных, оставшихся и помеченных вопросов, а также процент правильных ответов (отображается после хотя бы одной ошибки и правильного ответа).
+                            </p>
+                            <p class="guide-item">
+                                Можно отвечать на вопрос с помощью цифр на клавиатуре, переключаться на предыдущий (Q) и следующий вопрос (E), а также добавлять в список отмеченных с помощью R.
+                            </p>
+                            <p class="art-header">Как загрузить свой тест</p>
+                            <p class="guide-item">
+                                Если необходимо загрузить свой файл с тестом, то следует нажать кнопку "Выбрать .docx",
+                                а затем
+                                кнопку со стрелкой. Требования к файлу:
+                            </p>
+                            <div style="margin-left: 5px;" class="art-list">
+
+                                <p class="guide-item">
+                                    <span>-</span>файл .docx;
+                                </p>
+                                <p class="guide-item">
+                                    <span>-</span>вопросы представлены обычным текстом, не списком;
+                                </p>
+                                <p class="guide-item">
+                                    <span>-</span>ответы представлены нумерованным списком;
+                                </p>
+                                <p class="guide-item">
+                                    <span>-</span>если есть картинка, то она находится в абзаце текста вопроса;
+                                </p>
+                                <p class="guide-item">
+                                    <span>-</span>правильный ответ отмечен "|1";
+                                </p>
+                                <p class="guide-item"> <span>-</span>
+                                    вариант ответа может ссылаться на другие варианты в виде перечисленных цифр. Для
+                                    этого
+                                    в конец варианта ответа нужно добавить multi-123, где 123 - другие варианты ответа.
+                                    Так,
+                                    перемешивание вариантов ответов будет работать корректно;
+                                </p>
+                                <p class="guide-item">
+                                    <span>-</span>multi должно идти после |1, если относится к правильному ответу.
+                                </p>
+                                <p class="guide-item">
+                                    <span>-</span>Можно сгруппировать вопросы по теме. Для этого перед первым вопросом новой темы должен быть абзац формата "ТЕМА [Номер]. [Название темы]"
+                                </p>
+                            </div>
+
+                        </div>
+
+                        <p class="art-header">
+                            Пример оформления вопроса
+                        </p>
+                        <img class="guide-item example" src="Assets/example.JPG">
+                    </div>
+                    <div class="art">
+                        <p class="art-header">Материалы по аттестации Специалист-Консультант по Управлению торговлей</p>
+                        <div class="info-grid">
+                            <p class="info-el" onclick="infoProcess('group', 'https://t.me/spec_exam_UT_cons')">Группа ТГ</p>
+                            <p class="info-el" onclick="infoProcess('file', '1 Билет УТ СпецКонс.docx')">1 Билет</p>
+                            <p class="info-el" onclick="infoProcess('file', '2 Билет УТ СпецКонс.docx')">2 Билет</p>
+                            <p class="info-el" onclick="infoProcess('file', '3 Билет УТ СпецКонс.docx')">3 Билет</p>
+                            <p class="info-el" onclick="infoProcess('file', '1 Конспект УТ СпецКонс.docx')">1 Конспект</p>
+                            <p class="info-el" onclick="infoProcess('file', '2 Конспект УТ СпецКонс.docx')">2 Конспект</p>
+                            <p class="info-el" onclick="infoProcess('file', '3 Конспект УТ СпецКонс.docx')">3 Конспект</p>
+                            <p class="info-el" onclick="infoProcess('file', 'Общий билет УТ СпецКонс.docx')">Общий билет</p>
+                            <p class="info-el" onclick="infoProcess('file', 'Общий конспект УТ СпецКонс.odt')">Общий конспект</p>
+                        </div>
+                    
+                    </div>
+
+                </main>
+                <footer class="modal-footer">
+                    <p>© 2025</p>
+                </footer>
+            </div>
+        </div>
+    </div>
+
+    <script src="Scripts/mammoth.browser.min.js"></script>
+    <script src="Scripts/index.umd.cjs"></script>
+    <script src="Scripts/micromodal.min.js"></script>
+    <script src="Scripts/script.js"></script>
 </body>
 
 </html>
