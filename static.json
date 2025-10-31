@@ -1,0 +1,10 @@
+{
+  "headers": {
+    "/**/*.js": {
+      "Content-Type": "application/javascript"
+    },
+    "/**/*.cjs": {
+      "Content-Type": "application/javascript"
+    }
+  }
+}
